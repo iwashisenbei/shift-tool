@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月間シフト作成ツール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Material Design 3 に沿った配色・形・余白。レイアウト：上部バー＋タブ、本文はカードを縦に積む */
+:root{
+  --primary:#6a5d3f;--on-primary:#fff;--primary-c:#f3e1bb;--on-primary-c:#231a04;
+  --secondary-c:#ece1cb;--on-secondary-c:#211b0d;--tertiary-c:#dbe4d3;--on-tertiary-c:#141e10;
+  --surface:#fdf9f3;--sc-low:#f8f3ea;--sc:#f2ede4;--sc-high:#ece7de;--sc-highest:#e6e2d9;
+  --on-surface:#1d1b16;--on-surface-v:#4b4739;--outline:#7d7767;--outline-v:#cec6b4;
+  --error:#ba1a1a;--error-c:#ffdad6;--on-error-c:#410002;--warn-c:#ffe9b8;--on-warn-c:#3a2a00;--ok-c:#dbe4d3;--on-ok-c:#141e10;
+  --sun:#c00000;--sat:#1f4fbf;
+  --c-shift:#fff;--c-rest:#dbe4d3;--c-kb-t:#c00000;--c-KAN:#8f8ca0;--c-KAN-t:#fff;--row-pri:#f4dcdc;--row-sat:#f3e6d3;--row-busy:#b3261e;
+  --font:"Roboto","Noto Sans JP",system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --primary:#d7c5a0;--on-primary:#3a2f15;--primary-c:#51462a;--on-primary-c:#f3e1bb;
+  --secondary-c:#4d4634;--on-secondary-c:#ece1cb;--tertiary-c:#3c4a36;--on-tertiary-c:#dbe4d3;
+  --surface:#15130e;--sc-low:#1d1b16;--sc:#211f1a;--sc-high:#2c2a24;--sc-highest:#37342e;
+  --on-surface:#e8e2d8;--on-surface-v:#cec6b4;--outline:#979080;--outline-v:#4b4739;
+  --error:#ffb4ab;--error-c:#93000a;--on-error-c:#ffdad6;--warn-c:#574400;--on-warn-c:#ffe9b8;--ok-c:#3c4a36;--on-ok-c:#dbe4d3;
+  --sun:#ff8a80;--sat:#a8c8ff;
+  --c-shift:#1d1b16;--c-rest:#3c4a36;--c-kb-t:#ff8a80;--c-KAN:#56546a;--c-KAN-t:#fff;--row-pri:#3d2525;--row-sat:#3a301f;--row-busy:#ff8a80;
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --primary:#d7c5a0;--on-primary:#3a2f15;--primary-c:#51462a;--on-primary-c:#f3e1bb;
+  --secondary-c:#4d4634;--on-secondary-c:#ece1cb;--tertiary-c:#3c4a36;--on-tertiary-c:#dbe4d3;
+  --surface:#15130e;--sc-low:#1d1b16;--sc:#211f1a;--sc-high:#2c2a24;--sc-highest:#37342e;
+  --on-surface:#e8e2d8;--on-surface-v:#cec6b4;--outline:#979080;--outline-v:#4b4739;
+  --error:#ffb4ab;--error-c:#93000a;--on-error-c:#ffdad6;--warn-c:#574400;--on-warn-c:#ffe9b8;--ok-c:#3c4a36;--on-ok-c:#dbe4d3;
+  --sun:#ff8a80;--sat:#a8c8ff;
+  --c-shift:#1d1b16;--c-rest:#3c4a36;--c-kb-t:#ff8a80;--c-KAN:#56546a;--c-KAN-t:#fff;--row-pri:#3d2525;--row-sat:#3a301f;--row-busy:#ff8a80;
+  color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--surface);color:var(--on-surface);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+h1{font-size:22px;font-weight:400;margin:0;line-height:28px}
+h2{font-size:16px;font-weight:500;margin:0 0 4px;letter-spacing:.1px}
+p{margin:0}
+.muted{color:var(--on-surface-v);font-size:12px}
+.bar{position:sticky;top:0;z-index:30;background:var(--sc);}
+.bar-in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.bar-in .sp{flex:1}
+.ym{display:flex;align-items:center;gap:4px}
+.tabs{max-width:1080px;margin:0 auto;display:flex;overflow-x:auto;padding:0 8px;scrollbar-width:none}
+.tab{flex:1 0 auto;min-width:88px;height:48px;padding:0 16px;border:0;background:none;cursor:pointer;font-size:14px;font-weight:500;letter-spacing:.1px;color:var(--on-surface-v);position:relative}
+.tab[aria-selected="true"]{color:var(--primary)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:16px;right:16px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--primary)}
+.tab:hover{background:color-mix(in srgb,var(--on-surface) 8%,transparent)}
+.bar-line{height:1px;background:var(--outline-v)}
+main{max-width:1080px;margin:0 auto;padding:16px 16px 120px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--sc-low);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card.out{background:var(--surface);border:1px solid var(--outline-v)}
+.row{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+.row.c{align-items:center}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--on-surface-v)}
+.fld input,.fld select,.in{height:40px;padding:0 12px;border:1px solid var(--outline);border-radius:4px;background:transparent;font-size:14px;color:var(--on-surface);min-width:0}
+.fld input:focus,.fld select:focus,.in:focus{outline:2px solid var(--primary);outline-offset:-1px;border-color:var(--primary)}
+.w-s{width:76px}.w-m{width:128px}.w-l{width:220px}
+select.in,.fld select{padding-right:8px}
+.btn{height:40px;padding:0 24px;border-radius:20px;border:0;cursor:pointer;font-size:14px;font-weight:500;letter-spacing:.1px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn.fill{background:var(--primary);color:var(--on-primary)}
+.btn.tonal{background:var(--secondary-c);color:var(--on-secondary-c)}
+.btn.outl{background:transparent;border:1px solid var(--outline);color:var(--primary)}
+.btn.text{background:transparent;color:var(--primary);padding:0 12px}
+.btn:hover{filter:brightness(.94)}
+.btn:disabled{opacity:.38;cursor:default;filter:none}
+.btn:focus-visible,.tab:focus-visible,.ib:focus-visible,.chip:focus-within,td.cell:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.ib{width:40px;height:40px;border-radius:20px;border:0;background:transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--on-surface-v)}
+.ib:hover{background:color-mix(in srgb,var(--on-surface) 8%,transparent)}
+.ib svg{width:24px;height:24px;fill:currentColor}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--outline);border-radius:8px;font-size:13px;font-weight:500;color:var(--on-surface-v);cursor:pointer;user-select:none}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip:has(input:checked){background:var(--secondary-c);color:var(--on-secondary-c);border-color:transparent}
+.chip:has(input:checked)::before{content:"✓";font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.sw{display:inline-flex;align-items:center;gap:12px;cursor:pointer;font-size:14px;color:var(--on-surface)}
+.sw input{appearance:none;-webkit-appearance:none;width:52px;height:32px;border-radius:16px;border:2px solid var(--outline);background:var(--sc-highest);position:relative;cursor:pointer;margin:0;flex:none;transition:background .15s}
+.sw input::after{content:"";position:absolute;top:6px;left:6px;width:16px;height:16px;border-radius:50%;background:var(--outline);transition:all .15s}
+.sw input:checked{background:var(--primary);border-color:var(--primary)}
+.sw input:checked::after{left:22px;top:2px;width:24px;height:24px;background:var(--on-primary)}
+.seg{display:inline-flex;border:1px solid var(--outline);border-radius:20px;overflow:hidden}
+.seg label{height:40px;padding:0 16px;display:inline-flex;align-items:center;font-size:14px;font-weight:500;cursor:pointer;border-left:1px solid var(--outline)}
+.seg label:first-child{border-left:0}
+.seg input{position:absolute;opacity:0}
+.seg label:has(input:checked){background:var(--secondary-c);color:var(--on-secondary-c)}
+.staff{border:1px solid var(--outline-v);border-radius:12px;padding:12px;background:var(--surface);display:flex;flex-direction:column;gap:12px}
+details>summary{cursor:pointer;color:var(--primary);font-weight:500;font-size:13px;padding:4px 0}
+details[open]>summary{margin-bottom:8px}
+.sub{display:flex;flex-direction:column;gap:12px;padding:12px;border-radius:8px;background:var(--sc-low)}
+.sub h3{margin:0;font-size:12px;font-weight:500;color:var(--on-surface-v)}
+.tw{overflow-x:auto;border:1px solid var(--outline-v);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--outline-v);border-right:1px solid var(--outline-v);padding:0 6px;height:32px;text-align:center;font-size:13px;white-space:nowrap}
+th:last-child,td:last-child{border-right:0}
+tr:last-child td{border-bottom:0}
+thead th{background:var(--sc);font-weight:500;font-size:12px;height:40px;position:sticky;top:0}
+th small{display:block;font-weight:400;font-size:10px;color:var(--on-surface-v)}
+td.l,th.l{text-align:left}
+tr.pri td.dt,tr.pri td.dw{background:var(--row-pri)}
+tr.sat6 td.dt,tr.sat6 td.dw{background:var(--row-sat)}
+tr.bz td.dt{box-shadow:inset 4px 0 0 var(--row-busy)}
+td.sun input.bud,td.sat input.bud{color:inherit}
+.sun{color:var(--sun)}.sat{color:var(--sat)}
+td.cell{cursor:pointer;min-width:52px;font-weight:500;user-select:none}
+td.cell:hover{box-shadow:inset 0 0 0 2px var(--outline)}
+td.cell.sel{box-shadow:inset 0 0 0 2px var(--primary)}
+td.cell.bad{box-shadow:inset 0 0 0 2px var(--error)}
+td.hint{color:var(--outline);font-weight:400;font-size:11px}
+:where(td.cell){background:var(--c-shift)}
+.k-K,.k-KB,.k-Y{background:var(--c-rest)}
+.k-KB,.code.k-KB{color:var(--c-kb-t);font-weight:700}
+.k-HA,.k-HP,.k-S,.k-T,.k-O{font-size:11px}
+.k-KAN,.code.k-KAN{background:var(--c-KAN);color:var(--c-KAN-t)}
+.legend span{border:1px solid var(--outline-v)}
+td.num.low{background:var(--error-c);color:var(--on-error-c);font-weight:700}
+td input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary);vertical-align:middle}
+td input.bud{width:72px;height:26px;border:1px solid var(--outline-v);border-radius:4px;background:transparent;text-align:right;padding:0 6px;font-size:12px}
+tr.sum td{background:var(--sc-low);font-size:12px}
+tr.sum td.ng{color:var(--error);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:6px}
+.legend span{padding:2px 8px;border-radius:6px;font-size:12px}
+.note{border-radius:12px;padding:12px 16px;font-size:13px}
+.note b{display:block;margin-bottom:4px;font-size:14px;font-weight:500}
+.note ul{margin:0;padding-left:1.2em}
+.note.err{background:var(--error-c);color:var(--on-error-c)}
+.note.warn{background:var(--warn-c);color:var(--on-warn-c)}
+.note.ok{background:var(--ok-c);color:var(--on-ok-c)}
+.rules{display:flex;flex-wrap:wrap;gap:8px}
+.rule{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;font-size:12px;font-weight:500;background:var(--ok-c);color:var(--on-ok-c)}
+.rule.ng{background:var(--error-c);color:var(--on-error-c)}
+.rule.na{background:var(--sc-high);color:var(--on-surface-v)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--sc-high);border-radius:28px 28px 0 0;box-shadow:0 -2px 12px rgba(0,0,0,.25);padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet-in{max-width:1048px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.sheet .ttl{display:flex;align-items:center;gap:8px;font-weight:500}
+.sheet .codes{display:flex;flex-wrap:wrap;gap:8px}
+.code{background:var(--surface);height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--outline-v);cursor:pointer;font-size:13px;font-weight:500;color:var(--on-surface)}
+.code.cur{outline:2px solid var(--primary);outline-offset:1px}
+.code.clr{background:var(--surface)}
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:24px}
+.dlg{background:var(--sc-high);border-radius:28px;padding:24px;max-width:520px;width:100%;max-height:90%;overflow:auto;display:flex;flex-direction:column;gap:16px}
+.dlg h2{font-size:24px;font-weight:400;line-height:32px;margin:0}
+.dlg .acts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.dlg img{max-width:100%;border:1px solid var(--outline-v);border-radius:8px}
+.opt{display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--outline-v);border-radius:12px;padding:12px 16px;background:var(--surface);cursor:pointer;font-size:14px}
+.opt b{font-weight:500;color:var(--primary)}
+.opt:hover{background:var(--sc-low)}
+.busy{display:inline-flex;align-items:center;gap:8px;color:var(--on-surface-v)}
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--outline-v);border-top-color:var(--primary);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.sw input,.sw input::after{transition:none}}
+@media (max-width:600px){main{padding:12px 12px 140px}.card{padding:12px}.btn{padding:0 16px}h1{font-size:18px}}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ===== シフト作成ロジック（画面に依存しない部分） ===== */
+const DOW = ['日', '月', '火', '水', '木', '金', '土'];
+const SHORT = { E: '早', M: '中', L: '遅', F: '通', K: '休', KB: '希', Y: '有', HA: 'AM休', HP: 'PM休', S: '出張', T: '研修', O: '他店', W: '必', KAN: '館' };
+const LONG = {
+  E: '早番', M: '中番', L: '遅番', F: '通し', K: '公休', KB: '希望休', Y: '有休（終日）',
+  HA: '午前休（遅番で勤務）', HP: '午後休（早番で勤務）', S: '出張', T: '研修', O: '他店ヘルプ', W: '必須出勤', KAN: '休館日'
+};
+const isRest = c => c === 'K' || c === 'KB' || c === 'Y' || c === 'KAN';
+const isWork = c => !isRest(c);                       // 連勤に数える日（出張・研修・他店ヘルプ・半休を含む）
+const onFloor = c => c === null || c === 'W' || c === 'E' || c === 'M' || c === 'L' || c === 'HA' || c === 'HP' || c === 'F';
+const isShift = c => c === 'E' || c === 'M' || c === 'L';
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* 日本の祝日（振替休日・国民の休日を含む） */
+function jpHolidays(y) {
+  const set = {};
+  const add = (m, d) => { set[m + '-' + d] = true; };
+  const nthMon = (m, n) => ((8 - new Date(y, m - 1, 1).getDay()) % 7) + 1 + (n - 1) * 7;
+  add(1, 1); add(2, 11); add(2, 23); add(4, 29); add(5, 3); add(5, 4); add(5, 5); add(8, 11); add(11, 3); add(11, 23);
+  add(1, nthMon(1, 2)); add(7, nthMon(7, 3)); add(9, nthMon(9, 3)); add(10, nthMon(10, 2));
+  const q = Math.floor((y - 1980) / 4);
+  add(3, Math.floor(20.8431 + 0.242194 * (y - 1980) - q));
+  add(9, Math.floor(23.2488 + 0.242194 * (y - 1980) - q));
+  const has = dt => !!set[(dt.getMonth() + 1) + '-' + dt.getDate()];
+  // 国民の休日（祝日に挟まれた平日）
+  for (let m = 1; m <= 12; m++) {
+    const n = new Date(y, m, 0).getDate();
+    for (let d = 1; d <= n; d++) {
+      const cur = new Date(y, m - 1, d);
+      if (has(cur) || cur.getDay() === 0) continue;
+      if (has(new Date(y, m - 1, d - 1)) && has(new Date(y, m - 1, d + 1))) set[m + '-' + d] = 'k';
+    }
+  }
+  // 振替休日
+  const base = Object.keys(set).filter(k => set[k] === true);
+  for (const k of base) {
+    const [m, d] = k.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    if (dt.getDay() !== 0) continue;
+    const nx = new Date(y, m - 1, d + 1);
+    while (has(nx)) nx.setDate(nx.getDate() + 1);
+    if (nx.getFullYear() === y) set[(nx.getMonth() + 1) + '-' + nx.getDate()] = 'f';
+  }
+  return set;
+}
+
+function buildDayInfo(y, m, mon) {
+  const days = new Date(y, m, 0).getDate();
+  const info = [null];
+  let maxB = 0;
+  for (let d = 1; d <= days; d++) maxB = Math.max(maxB, +mon.budget?.[d] || 0);
+  for (let d = 1; d <= days; d++) {
+    const dow = new Date(y, m - 1, d).getDay();
+    const hol = !!mon.hol?.[d];
+    const b = +mon.budget?.[d] || 0;
+    info.push({ d, dow, hol, kan: !!mon.kan?.[d], nou: !!mon.nou?.[d], ev: !!mon.ev?.[d], busy: !!mon.busy?.[d], budget: b, bn: maxB ? b / maxB : 0, pri: dow === 0 || dow === 6 || hol });
+  }
+  return info;
+}
+
+/* 第n ○曜日の日付（なければ0） */
+function nthDow(y, m, nth, dow) {
+  const days = new Date(y, m, 0).getDate();
+  let c = 0;
+  for (let d = 1; d <= days; d++) if (new Date(y, m - 1, d).getDay() === dow && ++c === nth) return d;
+  return 0;
+}
+
+/* 勤務制限：その日にその番へ入れるか */
+function canDo(emp, s, y, m, d) {
+  const a = emp.allow || {};
+  if (a.E !== false && a.M !== false && a.L !== false) return true;
+  const key = y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  if (emp.restrFrom && key < emp.restrFrom) return true;   // 期間外には適用しない
+  if (emp.restrTo && key > emp.restrTo) return true;
+  if (a.E === false && a.M === false && a.L === false) return true; // 全部不可は無効な指定として扱う
+  return a[s] !== false;
+}
+
+function workBlocks(row, days) {
+  const out = []; let st = 0;
+  for (let d = 1; d <= days + 1; d++) {
+    const w = d <= days && isWork(row[d]);
+    if (w && !st) st = d;
+    if (!w && st) { out.push([st, d - 1]); st = 0; }
+  }
+  return out;
+}
+const blockLen = (a, b, carry) => b - a + 1 + (a === 1 ? carry : 0);
+
+/* 連勤の評価：上限超えのブロックを返す（例外枠を1回だけ消費） */
+function streakIssues(row, days, emp, cfg) {
+  const L = cfg.streakLimit, carry = emp.carryRun | 0;
+  let free = cfg.allowPlus1 && !emp.prevOver ? 1 : 0;
+  const bad = []; let max = 0, used = null;
+  for (const [a, b] of workBlocks(row, days)) {
+    const len = blockLen(a, b, carry);
+    if (len > max) max = len;
+    if (len <= L) continue;
+    if (len === L + 1 && free > 0) { free--; used = [a, b, len]; continue; }
+    bad.push([a, b, len]);
+  }
+  return { bad, max, used };
+}
+
+function sandwiches(row, days, emp) {
+  const out = [];
+  for (let d = 1; d <= days; d++) {
+    if (!isWork(row[d])) continue;
+    const before = d === 1 ? (emp.carryRun | 0) === 0 : isRest(row[d - 1]);
+    const after = d === days ? false : isRest(row[d + 1]);
+    if (before && after) out.push(d);
+  }
+  return out;
+}
+
+function dutyWeeks(emp, info, days) {
+  const set = emp.dutyDows || [];
+  if (!set.length) return [];
+  const weeks = {};
+  for (let d = 1; d <= days; d++) {
+    if (info[d].kan || !set.includes(info[d].dow)) continue;
+    const w = Math.floor((d + info[1].dow - 1) / 7);
+    (weeks[w] = weeks[w] || []).push(d);
+  }
+  return Object.values(weeks);
+}
+
+/* 定例業務：できる人が店頭にいるべき日のまとまり（each＝各曜日ごと、any＝週ごとにどれか1日） */
+const weekNo = (y, m, d) => Math.floor((Date.UTC(y, m - 1, d) / 864e5 + 4) / 7);   // 日曜始まりの通し週番号
+/* その日がその業務の実施日か（隔週は基準日と同じ週から1週おき） */
+function taskOn(task, y, m, d, dow) {
+  if (!(task.dows || []).includes(dow)) return false;
+  if (task.freq === 'bi' && task.anchor) {
+    const a = task.anchor.split('-').map(Number);
+    if (a.length === 3 && a[0]) return (weekNo(y, m, d) - weekNo(a[0], a[1], a[2])) % 2 === 0;
+  }
+  return true;
+}
+/* ex＝その月だけの日程変更 { skip:{日:true}, add:{日:true} } */
+function taskGroups(task, info, days, y, m, ex) {
+  const out = [], skip = (ex && ex.skip) || {}, add = (ex && ex.add) || {};
+  if (!(task.members || []).length) return out;
+  const weeks = {};
+  for (let d = 1; d <= days; d++) {
+    if (info[d].kan) continue;
+    if (add[d]) { out.push([d]); continue; }                 // 追加した日は、その日に必ず
+    if (skip[d] || !taskOn(task, y, m, d, info[d].dow)) continue;
+    if (task.mode === 'any') { const w = Math.floor((d + info[1].dow - 1) / 7); (weeks[w] = weeks[w] || []).push(d); }
+    else out.push([d]);
+  }
+  return out.concat(task.mode === 'any' ? Object.values(weeks) : []);
+}
+/* 備考に業務名を出す日か */
+function taskShown(task, y, m, d, dow, ex) {
+  if (ex && ex.add && ex.add[d]) return true;
+  if (ex && ex.skip && ex.skip[d]) return false;
+  if (!taskOn(task, y, m, d, dow)) return false;
+  const sh = task.showDows || [];
+  if (sh.length) return sh.includes(dow);
+  // 「どれか1日」の業務は、指定がなければ週の最後の曜日にだけ出す
+  return task.mode === 'any' ? dow === Math.max(...task.dows) : true;
+}
+
+/* 開店・閉店の要員がそろうか */
+function coverOK(col, emps, y, m, d) {
+  let o = [], c = [], n = 0;
+  for (let i = 0; i < col.length; i++) {
+    const v = col[i];
+    if (!onFloor(v)) continue;
+    n++;
+    if (v === 'F') return true;
+    if (v === 'E' || v === 'HP' || ((v === null || v === 'W') && canDo(emps[i], 'E', y, m, d))) o.push(i);
+    if (v === 'L' || v === 'HA' || ((v === null || v === 'W') && canDo(emps[i], 'L', y, m, d))) c.push(i);
+  }
+  if (n < 2) return true;
+  if (!o.length || !c.length) return false;
+  return !(o.length === 1 && c.length === 1 && o[0] === c[0]);
+}
+
+/* ---------- 1. 休みの配置 ---------- */
+function placeRests(ctx, seed) {
+  const { emps, days, info, pre, cfg, y, m, kokyuu } = ctx;
+  const n = emps.length, warnings = [];
+  const cells = emps.map(() => Array(days + 1).fill(null));
+  for (let i = 0; i < n; i++) for (let d = 1; d <= days; d++) {
+    const p = pre[emps[i].id + '-' + d];
+    if (info[d].kan) cells[i][d] = 'KAN'; else if (p) cells[i][d] = p;
+  }
+  // 責任者の必須出勤日
+  const chiefDay = cfg.chiefNth ? nthDow(y, m, cfg.chiefNth, cfg.chiefDow) : 0;
+  if (chiefDay) emps.forEach((e, i) => {
+    if (e.role !== 'chief') return;
+    if (cells[i][chiefDay] === null) cells[i][chiefDay] = 'W';
+    else if (!onFloor(cells[i][chiefDay])) warnings.push(`${e.name}：責任者の出勤日（${chiefDay}日）に事前登録の予定があり、店頭に出られません。`);
+  });
+  const need = [];
+  for (let i = 0; i < n; i++) {
+    let got = 0, free = 0;
+    for (let d = 1; d <= days; d++) {
+      const c = cells[i][d];
+      if (c === 'KB' || c === 'K' || (cfg.includeKan && c === 'KAN')) got++;
+      if (c === null) free++;
+    }
+    let r = (kokyuu[emps[i].id] | 0) - got;
+    if (r < 0) { warnings.push(`${emps[i].name}：事前登録の休みが公休日数（${kokyuu[emps[i].id]}日）を${-r}日超えています。`); r = 0; }
+    if (r > free) { warnings.push(`${emps[i].name}：公休を置ける日が足りません（残り${r}日に対して空きが${free}日）。`); r = free; }
+    need.push(r);
+  }
+  const fixed = cells.map(r => r.map(c => c !== null));
+  const cnt = emps.map(e => !(e.newbie && e.noCount));   // 人数に数えない新人は最低人数・開閉店の要員から外す
+  const floor = d => { let k = 0; for (let i = 0; i < n; i++) if (cnt[i] && onFloor(cells[i][d])) k++; return k; };
+  const min = cfg.minStaff, pri = Math.max(cfg.priStaff, min), max = Math.max(cfg.maxStaff, pri);
+  const tasks = (cfg.tasks || []).map(t => ({ groups: taskGroups(t, info, days, y, m, (ctx.taskEx || {})[t.id]), idx: (t.members || []).map(id => emps.findIndex(e => e.id === id)).filter(i => i >= 0) })).filter(t => t.groups.length && t.idx.length);
+  const taskCost = () => {
+    let t = 0;
+    for (const tk of tasks) for (const g of tk.groups) {
+      let ok = false;
+      for (const d of g) { for (const i of tk.idx) if (onFloor(cells[i][d])) { ok = true; break; } if (ok) break; }
+      if (!ok) t += 150;
+    }
+    return t;
+  };
+  const buds = emps.map(e => e.newbie ? (e.buddies || []).map(id => emps.findIndex(x => x.id === id)).filter(i => i >= 0) : []);
+
+  const dayCost = d => {
+    if (info[d].kan) return 0;
+    let t = 0;
+    const k = floor(d), I = info[d];
+    if (k < min) t += (min - k) * 400;
+    const tgt = I.busy ? Math.max(cfg.busyStaff || pri, min) : pri, mx = I.busy ? Math.max(max, tgt) : max;
+    if (k > mx) t += (k - mx) * (k - mx) * 80;
+    if (I.busy || I.pri || I.nou || I.ev) {
+      const w = I.busy ? 12 + 3 * I.bn : I.pri ? 9 + 3 * I.bn : I.nou ? 5 + I.bn : 4 + I.bn;
+      if (k < tgt) t += (tgt - k) * w; else t += (k - tgt) * 3;
+    } else if (k > min) t += (k - min) * (2 - 1.5 * I.bn);
+    if (k >= 2) { const col = []; for (let i = 0; i < n; i++) col.push(cnt[i] ? cells[i][d] : 'K'); if (!coverOK(col, emps, y, m, d)) t += 300; }
+    return t;
+  };
+  const staffCost = i => {
+    let t = 0;
+    const row = cells[i], e = emps[i];
+    const s = streakIssues(row, days, e, cfg);
+    for (const b of s.bad) t += (b[2] - cfg.streakLimit) * 500;
+    if (s.used) t += 30;
+    if (cfg.avoidSandwich) t += sandwiches(row, days, e).length * 120;
+    let run = 0, hasK = false, wr = 0;
+    for (let d = 1; d <= days + 1; d++) {
+      const r = d <= days && isRest(row[d]) && row[d] !== 'KAN';
+      if (r) { run++; if (row[d] === 'K') hasK = true; if (info[d].pri) wr++; }
+      else { if (run >= 3 && hasK) t += (run - 2) * 12; run = 0; hasK = false; }
+    }
+    const bl = buds[i];
+    if (bl.length) for (let d = 1; d <= days; d++) if (onFloor(row[d]) && !bl.some(b => onFloor(cells[b][d]))) t += 60;
+    return [t, wr];
+  };
+  const dc = new Float64Array(days + 1), sc = new Float64Array(n), wrs = new Float64Array(n);
+  const dependents = emps.map((e, i) => emps.map((x, j) => buds[j].includes(i) ? j : -1).filter(j => j >= 0));
+  const total = () => {
+    let t = 0, lo = 99, hi = 0;
+    for (let d = 1; d <= days; d++) t += dc[d];
+    for (let i = 0; i < n; i++) { t += sc[i]; if (wrs[i] < lo) lo = wrs[i]; if (wrs[i] > hi) hi = wrs[i]; }
+    return t + (hi - lo) * 4 + taskCost();
+  };
+  const refreshStaff = i => { const r = staffCost(i); sc[i] = r[0]; wrs[i] = r[1]; };
+  const cost = () => {
+    for (let d = 1; d <= days; d++) dc[d] = dayCost(d);
+    for (let i = 0; i < n; i++) refreshStaff(i);
+    return total();
+  };
+  const touch = (i, a, b) => { dc[a] = dayCost(a); dc[b] = dayCost(b); refreshStaff(i); for (const j of dependents[i]) refreshStaff(j); return total(); };
+
+  const movable = []; for (let i = 0; i < n; i++) if (need[i] > 0) movable.push(i);
+  const init = () => {
+    for (let i = 0; i < n; i++) {
+      for (let d = 1; d <= days; d++) if (!fixed[i][d]) cells[i][d] = null;
+      const fr = []; for (let d = 1; d <= days; d++) if (!fixed[i][d]) fr.push(d);
+      for (let j = 0; j < need[i]; j++) {
+        let idx = Math.min(fr.length - 1, Math.floor((j + 0.5 + (i * 0.37) % 1) * fr.length / need[i]) % fr.length);
+        while (cells[i][fr[idx]] === 'K') idx = (idx + 1) % fr.length;
+        cells[i][fr[idx]] = 'K';
+      }
+    }
+  };
+  let best = null, bestCost = Infinity;
+  const rounds = movable.length ? 3 : 1, iters = 26000 + 3000 * n;
+  for (let r = 0; r < rounds; r++) {
+    const rnd = mulberry32((seed + 1) * 7919 + r * 104729);
+    init();
+    let cur = cost(), T = 80;
+    const cool = Math.pow(0.4 / 80, 1 / iters);
+    let lb = cells.map(x => x.slice()), lbc = cur;
+    for (let it = 0; it < iters && movable.length; it++, T *= cool) {
+      const i = movable[Math.floor(rnd() * movable.length)], row = cells[i];
+      const ks = [], fs = [];
+      for (let d = 1; d <= days; d++) if (!fixed[i][d]) (row[d] === 'K' ? ks : fs).push(d);
+      if (!ks.length || !fs.length) continue;
+      const a = ks[Math.floor(rnd() * ks.length)], b = fs[Math.floor(rnd() * fs.length)];
+      // 3割は2人の休みを入れ替える（人数を変えずに並びだけ直す）
+      let j = -1;
+      if (movable.length > 1 && rnd() < 0.3) {
+        j = movable[Math.floor(rnd() * movable.length)];
+        if (j === i || fixed[j][a] || fixed[j][b] || cells[j][a] !== null || cells[j][b] !== 'K') j = -1;
+      }
+      row[a] = null; row[b] = 'K';
+      if (j >= 0) { cells[j][a] = 'K'; cells[j][b] = null; }
+      let nc = touch(i, a, b);
+      if (j >= 0) nc = touch(j, a, b);
+      if (nc <= cur || rnd() < Math.exp((cur - nc) / T)) {
+        cur = nc;
+        if (cur < lbc) { lbc = cur; lb = cells.map(x => x.slice()); }
+      } else {
+        row[a] = 'K'; row[b] = null;
+        if (j >= 0) { cells[j][a] = null; cells[j][b] = 'K'; touch(j, a, b); }
+        touch(i, a, b);
+      }
+    }
+    if (lbc < bestCost) { bestCost = lbc; best = lb; }
+  }
+  for (let i = 0; i < n; i++) cells[i] = best[i];
+  const shortage = [];
+  for (let d = 1; d <= days; d++) if (!info[d].kan) { const k = floor(d); if (k < min) shortage.push({ d, n: k, lack: min - k }); }
+  return { cells, warnings, shortage };
+}
+
+/* ---------- 2. 番の割り当て ---------- */
+function assignShifts(ctx, cells, helpCols) {
+  const { emps, days, info, cfg, y, m } = ctx;
+  const persons = emps.map((e, i) => ({ row: cells[i], dir: e.dir || 'L2E', emp: e, help: false, count: !(e.newbie && e.noCount),
+    same: e.newbie && e.sameShift ? (e.buddies || []).map(id => emps.findIndex(x => x.id === id)).filter(b => b >= 0) : [] }))
+    .concat(helpCols.map(col => ({ row: col, dir: 'none', emp: null, help: true, count: true, same: [] })));
+  const P = persons.length;
+  // 短縮営業日に「全員を1つの番で通す」設定なら、その日は通しにする
+  if (cfg.shortSingle) for (let d = 1; d <= days; d++) if ((ctx.short || {})[d]) persons.forEach(p => { if (!p.help && (p.row[d] === null || p.row[d] === 'W')) p.row[d] = 'F'; });
+  const wDir = cfg.shiftPolicy === 'fair' ? 30 : 100;
+  const plan = [null];
+  for (let d = 1; d <= days; d++) {
+    const vars = [], allow = [], fx = [], cv = [], fixS = {};
+    let fe = 0, fl = 0, cnt = 0;
+    persons.forEach((p, i) => {
+      const c = p.row[d];
+      if (p.help) { if (c === 'H') { vars.push(i); allow.push([true, true, true]); cv.push(true); cnt++; } else fx.push([i, 'rest']); return; }
+      if (isRest(c)) { fx.push([i, 'rest']); return; }
+      if (c === null || c === 'W') {
+        vars.push(i); cv.push(p.count); if (p.count) cnt++;
+        allow.push(['E', 'M', 'L'].map(s => canDo(p.emp, s, y, m, d)));
+      } else {
+        if (onFloor(c) && p.count) cnt++;
+        if (c === 'E' || c === 'HP') { if (p.count) fe++; fx.push([i, 'E']); fixS[i] = 0; }
+        else if (c === 'L' || c === 'HA') { if (p.count) fl++; fx.push([i, 'L']); fixS[i] = 2; }
+        else if (c === 'M') { fx.push([i, 'M']); fixS[i] = 1; }
+        else if (c === 'F' && p.count) { fe++; fl++; }
+      }
+    });
+    // 新人をバディと同じ番にする指定：その日に番のあるバディを集めておく
+    const same = [];
+    vars.forEach((i, j) => {
+      const bl = persons[i].same; if (!bl.length) return;
+      const bv = [], bf = [];
+      bl.forEach(b => { const jj = vars.indexOf(b); if (jj >= 0) bv.push(jj); else if (fixS[b] !== undefined) bf.push(fixS[b]); });
+      if (bv.length || bf.length) same.push({ j, bv, bf });
+    });
+    plan.push({ vars, allow, fx, fe, fl, cnt, cv, same });
+  }
+  // 直前の番（0なし 1早 2中 3遅）を2ビットずつ持つ。遅→中→早の向きに逆らうと減点
+  const step = (last, dir, s) => {
+    const lv = s + 1;
+    if (dir === 'none') return [0, 0];
+    const rev = last && (dir === 'L2E' ? lv > last : lv < last);
+    return [rev ? 1 : 0, lv];   // 早→中、中→遅の逆戻りも、早→遅と同じ重さで避ける
+  };
+  const getL = (st, i) => st >> (2 * i) & 3;
+  const setL = (st, i, v) => (st & ~(3 << (2 * i))) | (v << (2 * i));
+  // 休み明けは先の番（遅→早なら遅）、休み前は後の番（早）に寄せる
+  const posCost = persons.map(p => {
+    const out = Array(days + 1).fill(null);
+    if (p.help || p.dir === 'none') return out;
+    const w = d => d >= 1 && d <= days && !isRest(p.row[d]);
+    for (let d = 1; d <= days; d++) {
+      if (!w(d)) continue;
+      const first = d === 1 ? (p.emp.carryRun | 0) === 0 : !w(d - 1);
+      const last = d < days && !w(d + 1);
+      if (first === last) continue;                 // 1日だけの出勤・連勤の中日は指定なし
+      const head = p.dir === 'L2E' ? 2 : 0, tail = 2 - head, c = [0, 0, 0];
+      if (first) { c[tail] = 6; c[1] = 2; } else { c[head] = 6; c[1] = 2; }
+      out[d] = c;
+    }
+    return out;
+  });
+  const pre = (d, st) => { // 固定分の処理
+    let v = 0;
+    for (const [i, k] of plan[d].fx) {
+      if (k === 'rest') { st = setL(st, i, 0); continue; }
+      const [vi, nl] = step(getL(st, i), persons[i].dir, k === 'E' ? 0 : k === 'M' ? 1 : 2);
+      v += vi; st = setL(st, i, nl);
+    }
+    return [st, v];
+  };
+  const each = (d, st0, fn) => {
+    const pl = plan[d], k = pl.vars.length;
+    const [st, v0] = pre(d, st0);
+    const total = Math.pow(3, k), sh = new Array(k);
+    for (let code = 0; code < total; code++) {
+      let c = code, ok = true, e = pl.fe, l = pl.fl, v = v0, ns = st, pc = 0;
+      for (let j = 0; j < k; j++) {
+        const s = c % 3; c = (c - s) / 3;
+        if (!pl.allow[j][s]) { ok = false; break; }
+        sh[j] = s;
+        if (pl.cv[j]) { if (s === 0) e++; else if (s === 2) l++; }
+        const i = pl.vars[j];
+        const [vi, nl] = step(getL(ns, i), persons[i].dir, s);
+        v += vi; ns = setL(ns, i, nl);
+        const q = posCost[i][d]; if (q) pc += q[s];
+      }
+      if (!ok) continue;
+      let cst = v * wDir + pc;
+      for (const q of pl.same) if (!q.bf.includes(sh[q.j]) && !q.bv.some(jj => sh[jj] === sh[q.j])) cst += 15;
+      const n = pl.cnt;
+      if (n > 0) {
+        if (e === 0) cst += 1000;
+        if (l === 0) cst += 1000;
+        if (n >= 2) cst += 10 * Math.abs(e - 1) + 10 * Math.abs(l - (n >= 4 ? 2 : 1));
+      }
+      fn(cst, ns, sh);
+    }
+  };
+  const memo = Array.from({ length: days + 2 }, () => new Map());
+  const V = (d, st) => {
+    if (d > days) return 0;
+    const mm = memo[d];
+    if (mm.has(st)) return mm.get(st);
+    let best = Infinity;
+    each(d, st, (c, ns) => { const t = c + V(d + 1, ns); if (t < best) best = t; });
+    if (best === Infinity) best = 5000 + V(d + 1, pre(d, st)[0]);
+    mm.set(st, best);
+    return best;
+  };
+  let st = 0;
+  persons.forEach((p, i) => {
+    if (p.help || p.dir === 'none') return;
+    const e = p.emp, lv = { E: 1, M: 2, L: 3 }[e.carryShift] || 0;
+    if ((e.carryRun | 0) > 0 && lv) st = setL(st, i, lv);
+  });
+  const counts = persons.map(() => [0, 0, 0]);
+  const fairW = cfg.shiftPolicy === 'fair' ? 3 : 0;
+  for (let d = 1; d <= days; d++) {
+    const pl = plan[d];
+    let best = Infinity, bestTie = Infinity, pick = null, pickNs = st;
+    const mins = [0, 1, 2].map(s => Math.min(...persons.filter(p => !p.help).map((p, i) => counts[i][s])));
+    each(d, st, (c, ns, sh) => {
+      let tie = 0;
+      for (let j = 0; j < sh.length; j++) { const i = pl.vars[j]; if (!persons[i].help) tie += counts[i][sh[j]] - mins[sh[j]]; }
+      const t = c + V(d + 1, ns) + fairW * tie;
+      if (t < best - 1e-9 || (Math.abs(t - best) < 1e-9 && tie < bestTie)) { best = t; bestTie = tie; pick = sh.slice(); pickNs = ns; }
+    });
+    if (!pick) { pick = pl.vars.map(() => 1); pickNs = pre(d, st)[0]; }
+    pl.vars.forEach((i, j) => { persons[i].row[d] = 'EML'[pick[j]]; counts[i][pick[j]]++; });
+    st = pickNs;
+  }
+}
+
+/* ---------- 3. まとめ（休み配置 → 人数割れの扱い → 番） ---------- */
+function finalize(ctx, placed, mode) {
+  const { emps, days } = ctx;
+  const cells = placed.cells.map(r => r.slice());
+  const helpN = mode === 'help' ? Math.max(0, ...placed.shortage.map(s => s.lack)) : 0;
+  const helpCols = [];
+  for (let j = 0; j < helpN; j++) {
+    const col = Array(days + 1).fill(null);
+    for (const s of placed.shortage) if (j < s.lack) col[s.d] = 'H';
+    helpCols.push(col);
+  }
+  assignShifts(ctx, cells, helpCols);
+  const out = {};
+  emps.forEach((e, i) => { out[e.id] = cells[i]; });
+  return {
+    cells: out, help: helpCols, warnings: placed.warnings,
+    accepted: mode === 'asis' ? placed.shortage.map(s => s.d) : [],
+    helpDays: mode === 'help' ? placed.shortage.map(s => s.d) : []
+  };
+}
+
+/* ---------- 4. 確認 ---------- */
+function checkResult(ctx, res) {
+  const { emps, days, info, cfg, y, m, kokyuu, pre } = ctx;
+  const errors = [], warns = [], bad = new Set(), rules = [true, true, true, true, true, true];
+  const mark = (id, d) => bad.add(id + '-' + d);
+  const rows = emps.map(e => res.cells[e.id] || Array(days + 1).fill(null));
+  const cnt = emps.map(e => !(e.newbie && e.noCount));
+  const help = res.help || [];
+  const min = cfg.minStaff, pri = Math.max(cfg.priStaff, min), max = Math.max(cfg.maxStaff, pri);
+  const dayCount = [0], helpDays = [];
+  let sum = 0, open = 0;
+  for (let d = 1; d <= days; d++) {
+    let n = 0, e = 0, l = 0, h = 0;
+    rows.forEach((r, i) => { const c = r[d]; if (cnt[i] && onFloor(c) && c !== null) { n++; if (c === 'E' || c === 'HP' || c === 'F') e++; if (c === 'L' || c === 'HA' || c === 'F') l++; } });
+    help.forEach(col => { const c = col[d]; if (isShift(c)) { n++; h++; if (c === 'E') e++; if (c === 'L') l++; } });
+    dayCount.push(n);
+    if (info[d].kan) continue;
+    open++; sum += n;
+    if (h) helpDays.push(`${d}日（${h}名）`);
+    if (n < min) {
+      if ((res.accepted || []).includes(d)) warns.push(`${d}日：店頭${n}名（最低${min}名）。人数割れを了承して作成した日です。`);
+      else errors.push(`${d}日：店頭${n}名で、最低人数${min}名を下回っています。`);
+    }
+    if (n === 1 && (res.accepted || []).includes(d)) { /* 了承済みの1名体制 */ }
+    else if (n > 0 && (e === 0 || l === 0)) {
+      rules[4] = false;
+      errors.push(`${d}日：${e === 0 ? '早番（開店の要員）' : ''}${e === 0 && l === 0 ? 'と' : ''}${l === 0 ? '遅番（閉店の要員）' : ''}がいません。`);
+      emps.forEach((x, i) => { if (cnt[i] && onFloor(rows[i][d])) mark(x.id, d); });
+    }
+    const I = info[d];
+    const tgt = I.busy ? Math.max(cfg.busyStaff || pri, min) : pri, mx = I.busy ? Math.max(max, tgt) : max;
+    if ((I.busy || I.pri || I.nou || I.ev) && n >= min && n < tgt) warns.push(`${d}日（${I.busy ? '繁忙期' : I.pri ? '土日祝' : I.nou ? '納品日' : 'イベント'}）：${n}名で、多めに置く人数${tgt}名にできませんでした。`);
+    if (n > mx) warns.push(`${d}日：${n}名で、1日の上限${mx}名を超えています。`);
+  }
+  if (helpDays.length) warns.push(`要ヘルプの日：${helpDays.join('、')}。延べ${help.reduce((a, c) => a + c.filter(isShift).length, 0)}人日の応援要請が必要です。`);
+  const stats = [];
+  const chiefDay = cfg.chiefNth ? nthDow(y, m, cfg.chiefNth, cfg.chiefDow) : 0;
+  emps.forEach((e, i) => {
+    const row = rows[i], nm = e.name;
+    const st = { E: 0, M: 0, L: 0, F: 0, work: 0, kokyuu: 0, kb: 0, y: 0, weekend: 0, max: 0, hours: 0 };
+    for (let d = 1; d <= days; d++) {
+      const c = row[d];
+      if (c === null) continue;
+      if (isWork(c)) { st.work++; st.hours += (c === 'HA' || c === 'HP') ? cfg.hoursPerDay / 2 : cfg.hoursPerDay; }
+      if (onFloor(c) && info[d].pri) st.weekend++;
+      if (c === 'E' || c === 'M' || c === 'L' || c === 'F') st[c]++;
+      if (c === 'K' || c === 'KB' || (cfg.includeKan && c === 'KAN')) st.kokyuu++;
+      if (c === 'KB') st.kb++;
+      if (c === 'Y') st.y++;
+      if (c === 'HA' || c === 'HP') st.y += 0.5;
+      // 勤務制限
+      if (isShift(c) && !canDo(e, c, y, m, d)) { rules[3] = false; errors.push(`${nm}：${d}日の${LONG[c]}は勤務制限に反しています。`); mark(e.id, d); }
+      // 事前登録を動かしていないか
+      const p = pre[e.id + '-' + d];
+      if (p && p !== 'W' && p !== c && !info[d].kan) { rules[2] = false; warns.push(`${nm}：${d}日は事前登録（${LONG[p]}）と違う内容になっています。`); mark(e.id, d); }
+      if (p === 'W' && !onFloor(c)) { rules[2] = false; errors.push(`${nm}：${d}日は必須出勤ですが、店頭に出ていません。`); mark(e.id, d); }
+    }
+    const s = streakIssues(row, days, e, cfg);
+    st.max = s.max;
+    for (const [a, b, len] of s.bad) {
+      errors.push(`${nm}：${a}日〜${b}日が${a === 1 && (e.carryRun | 0) ? '前月からの分を含めて' : ''}${len}連勤です（上限${cfg.streakLimit}日）。`);
+      for (let d = a; d <= b; d++) mark(e.id, d);
+    }
+    if (s.used) warns.push(`${nm}：${s.used[0]}日〜${s.used[1]}日は${s.used[2]}連勤です（月1回までの例外を使用）。`);
+    if (cfg.avoidSandwich) {
+      const sw = sandwiches(row, days, e), fix = [], av = [];
+      const fixedRest = d => d < 1 || d > days || info[d].kan || ['KB', 'Y'].includes(pre[e.id + '-' + d]);
+      sw.forEach(d => ((fixedRest(d - 1) && fixedRest(d + 1)) ? fix : av).push(d));
+      if (av.length) { errors.push(`${nm}：${av.join('・')}日が飛び石休み（休み・出勤・休み）です。`); av.forEach(d => mark(e.id, d)); }
+      if (fix.length) warns.push(`${nm}：${fix.join('・')}日は事前登録の休みに挟まれた1日だけの出勤です（避けられない飛び石）。`);
+    }
+    const kq = kokyuu[e.id] | 0;
+    if (st.kokyuu !== kq) { rules[1] = false; errors.push(`${nm}：公休が${st.kokyuu}日です（設定は${kq}日）。`); }
+    if (cfg.kibouMax && st.kb > cfg.kibouMax) warns.push(`${nm}：希望休が${st.kb}日で、上限${cfg.kibouMax}日を超えています。`);
+    if (cfg.monthHoursMax && st.hours > cfg.monthHoursMax) { rules[0] = false; errors.push(`${nm}：月の労働時間が${st.hours}時間で、上限${cfg.monthHoursMax}時間を超えています。`); }
+    // 番の並び
+    if (e.dir !== 'none') {
+      const val = c => (c === 'E' || c === 'HP') ? 1 : c === 'M' ? 2 : (c === 'L' || c === 'HA') ? 3 : 0;
+      const ex = [];
+      let last = (e.carryRun | 0) > 0 ? val(e.carryShift || '') : 0;
+      for (let d = 1; d <= days; d++) {
+        const c = row[d];
+        if (c !== null && isRest(c)) { last = 0; continue; }
+        const v = val(c);
+        if (!v) continue;
+        if (last && (e.dir === 'L2E' ? v > last : v < last)) { ex.push(d); mark(e.id, d); }
+        last = v;
+      }
+      if (ex.length) warns.push(`${nm}：${ex.join('・')}日は番の並び（${e.dir === 'L2E' ? '遅→中→早' : '早→中→遅'}）に逆らっています。`);
+    }
+    if (chiefDay && e.role === 'chief' && !(onFloor(row[chiefDay]) && row[chiefDay] !== null)) warns.push(`${nm}：責任者の出勤日（${chiefDay}日）に店頭に出ていません。`);
+    const bl = e.newbie ? (e.buddies || []).map(id => emps.findIndex(x => x.id === id)).filter(b => b >= 0) : [];
+    if (bl.length) {
+      const on = (b, d) => onFloor(rows[b][d]) && rows[b][d] !== null;
+      const lv = c => (c === 'E' || c === 'HP') ? 1 : c === 'M' ? 2 : (c === 'L' || c === 'HA') ? 3 : c === 'F' ? 9 : 0;
+      const alone = [], diff = [];
+      for (let d = 1; d <= days; d++) {
+        if (!(onFloor(row[d]) && row[d] !== null)) continue;
+        const here = bl.filter(b => on(b, d));
+        if (!here.length) alone.push(d);
+        else if (e.sameShift && lv(row[d]) && !here.some(b => lv(rows[b][d]) === lv(row[d]) || lv(rows[b][d]) === 9)) diff.push(d);
+      }
+      const names = bl.map(b => emps[b].name).join('・');
+      if (alone.length) warns.push(`${nm}（新人）：${alone.join('・')}日はバディ（${names}）が誰もいない日の出勤です。`);
+      if (diff.length) warns.push(`${nm}（新人）：${diff.join('・')}日はバディと同じ番にできませんでした。`);
+    }
+    stats.push(st);
+  });
+  for (const t of (cfg.tasks || [])) {
+    const idx = (t.members || []).map(id => emps.findIndex(e => e.id === id)).filter(i => i >= 0);
+    if (!idx.length) continue;
+    const miss = taskGroups(t, info, days, y, m, (ctx.taskEx || {})[t.id]).filter(g => !g.some(d => idx.some(i => onFloor(rows[i][d]) && rows[i][d] !== null)));
+    if (miss.length) warns.push(`${t.name || '定例業務'}：${miss.map(g => g.map(d => d + '日').join('か')).join('、')}に、できる人（${idx.map(i => emps[i].name).join('・')}）が出勤していません。代わりの担当か前倒しを確認してください。`);
+  }
+  for (const [k, label] of [['E', '早番'], ['L', '遅番']]) {
+    const v = stats.map(s => s[k]);
+    if (v.length > 1) { const hi = Math.max(...v), lo = Math.min(...v); if (hi >= 2 * Math.max(1, lo) && hi - lo >= 2) warns.push(`${label}の回数に2倍以上の偏りがあります（最少${lo}回〜最多${hi}回）。`); }
+  }
+  (res.warnings || []).forEach(w => warns.unshift(w));
+  return { errors, warns, bad, stats, dayCount, avg: open ? sum / open : 0, rules };
+}
+
+if (typeof module !== 'undefined' && typeof window === 'undefined') module.exports = { taskGroups, taskOn, taskShown, jpHolidays, buildDayInfo, placeRests, finalize, checkResult, nthDow, isRest, onFloor, isWork };
+
+</script>
+<script>
+/* ===== 画面 ===== */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('shiftapp2:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('shiftapp2:' + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const newEmp = (id, n) => ({ id: 's' + id, name: 'スタッフ' + n, type: '社員', role: '', dir: 'L2E', allow: { E: true, M: true, L: true }, restrFrom: '', restrTo: '', dutyName: '', dutyDows: [], newbie: false, buddies: [], sameShift: false, noCount: false, carryRun: 0, carryShift: '', prevOver: false });
+const defCfg = () => ({
+  storeName: '', minStaff: 2, priStaff: 3, maxStaff: 3, busyStaff: 3, includeKan: true, nouDows: [],
+  shiftDefs: { E: { label: '早', time: '9:30-18:30' }, M: { label: '中', time: '10:45-19:45' }, L: { label: '遅', time: '11:15-20:15' }, F: { label: '通', time: '9:30-20:15' } },
+  shortDefs: { E: { label: '早', time: '' }, M: { label: '中', time: '' }, L: { label: '遅', time: '' }, F: { label: '通', time: '' } }, shortSingle: false, tasks: [], nextTask: 1,
+  streakLimit: 3, allowPlus1: false, avoidSandwich: true, shiftPolicy: 'dir', kibouMax: 0, chiefNth: 0, chiefDow: 4,
+  hoursPerDay: 8, monthHoursMax: 0, types: ['社員', '派遣社員', 'パート・アルバイト'], lastKokyuu: { '社員': 10, '派遣社員': 9, 'パート・アルバイト': 9 },
+  emps: [newEmp(1, 1), newEmp(2, 2), newEmp(3, 3), newEmp(4, 4)], nextId: 5
+});
+function fixEmps(c) { c.emps.forEach(e => { if (e.mentor && !e.buddies) { e.newbie = true; e.buddies = [e.mentor]; } e.buddies = e.buddies || []; delete e.mentor; }); return c; }
+function loadCfg() { return fixEmps(loadCfg0()); }
+function loadCfg0() {
+  const c = store.get('config', null);
+  if (c) {
+    const r = Object.assign(defCfg(), c);
+    if (!c.tasks) r.emps.forEach(e => { if ((e.dutyDows || []).length) r.tasks.push({ id: 't' + r.nextTask++, name: e.dutyName || '担当業務', dows: e.dutyDows.slice(), members: [e.id], mode: 'any' }); });
+    return r;
+  }
+  const d = defCfg();
+  try { // 前のツールの設定があれば引き継ぐ
+    const o = JSON.parse(localStorage.getItem('shiftapp:config') || 'null');
+    if (o) {
+      d.storeName = o.storeName || ''; d.minStaff = o.minStaff || 2; d.priStaff = o.priStaff || 3; d.maxStaff = Math.max(3, d.priStaff); d.includeKan = o.includeKan !== false;
+      if (o.shiftDefs) Object.assign(d.shiftDefs, o.shiftDefs);
+      if (o.emps) { d.emps = o.emps.map((e, i) => Object.assign(newEmp(i + 1, i + 1), { name: e.name, dir: e.type || 'L2E', })); d.nextId = o.emps.length + 1; o.emps.forEach((e, i) => { if (e.hacchu) d.tasks.push({ id: 't' + d.nextTask++, name: '発注', dows: [4, 5], members: ['s' + (i + 1)], mode: 'any' }); }); }
+      if (o.kokyuu) d.lastKokyuu = { '社員': o.kokyuu, '派遣社員': o.kokyuu, 'パート・アルバイト': o.kokyuu };
+    }
+  } catch (e) { }
+  return d;
+}
+const now = new Date();
+const S = { cfg: loadCfg(), y: now.getFullYear(), m: now.getMonth() + 1, mon: null, tab: 'kihon', pick: null, dlg: null, busy: false, saved: true };
+const TABS = [['kihon', '基本設定'], ['staff', 'スタッフ'], ['kokyu', '公休設定'], ['toroku', '事前登録'], ['shift', 'シフト表']];
+const mkey = (y, m) => 'm:' + y + '-' + m;
+const daysOf = () => new Date(S.y, S.m, 0).getDate();
+function defMon(y, m) {
+  const days = new Date(y, m, 0).getDate(), H = jpHolidays(y), hol = {}, nou = {};
+  for (let d = 1; d <= days; d++) {
+    if (H[m + '-' + d]) hol[d] = true;
+    if (S.cfg.nouDows.includes(new Date(y, m - 1, d).getDay())) nou[d] = true;
+  }
+  return { hol, kan: {}, nou, ev: {}, busy: {}, short: {}, taskEx: {}, budget: {}, pre: {}, kType: Object.assign({}, S.cfg.lastKokyuu), kInd: {}, result: null, seed: 0 };
+}
+function loadMon() { S.mon = Object.assign(defMon(S.y, S.m), store.get(mkey(S.y, S.m), {})); S.pick = null; }
+function save() { const a = store.set('config', S.cfg), b = store.set(mkey(S.y, S.m), S.mon); S.saved = a && b; }
+const kokyuuOf = e => { const v = S.mon.kInd[e.id]; return (v !== undefined && v !== '' && v !== null) ? +v : (+S.mon.kType[e.type] || 0); };
+function ctx() {
+  const kokyuu = {}; S.cfg.emps.forEach(e => kokyuu[e.id] = kokyuuOf(e));
+  return { emps: S.cfg.emps, days: daysOf(), info: buildDayInfo(S.y, S.m, S.mon), pre: S.mon.pre, cfg: S.cfg, y: S.y, m: S.m, kokyuu, short: S.mon.short, taskEx: S.mon.taskEx };
+}
+const lab = (c, d) => { const df = d && S.mon.short[d] ? S.cfg.shortDefs : S.cfg.shiftDefs; return (df[c] ? df[c].label || SHORT[c] : SHORT[c]) || ''; };
+const longLab = (c, d) => S.cfg.shiftDefs[c] ? `${LONG[c]}（${lab(c, d)}）` : LONG[c];
+const IC = {
+  l: '<svg viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4L10.8 12z"/></svg>',
+  r: '<svg viewBox="0 0 24 24"><path d="M8.6 16.6 10 18l6-6-6-6-1.4 1.4L13.2 12z"/></svg>',
+  x: '<svg viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>',
+  del: '<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5-1-1h-5l-1 1H5v2h14V4z"/></svg>'
+};
+const fld = (label, inner) => `<label class="fld">${label}${inner}</label>`;
+const num = (id, k, v, o = {}) => `<input id="${id}" class="${o.w || 'w-s'}" type="number" inputmode="numeric" data-k="${k}" data-t="${o.t || 'int'}" value="${esc(v)}" min="${o.min ?? 0}" ${o.max != null ? `max="${o.max}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} step="${o.step || 1}">`;
+const txt = (id, k, v, w = 'w-m', ph = '') => `<input id="${id}" class="${w}" type="text" data-k="${k}" value="${esc(v)}" placeholder="${esc(ph)}">`;
+const sel = (id, k, v, opts, t = 'str') => `<select id="${id}" data-k="${k}" data-t="${t}">${opts.map(([a, b]) => `<option value="${esc(a)}" ${String(a) === String(v) ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select>`;
+const sw = (id, k, v, label) => `<label class="sw"><input id="${id}" type="checkbox" data-k="${k}" data-t="bool" ${v ? 'checked' : ''}>${label}</label>`;
+const chip = (id, k, v, label) => `<label class="chip"><input id="${id}" type="checkbox" data-k="${k}" data-t="bool" ${v ? 'checked' : ''}>${label}</label>`;
+
+/* ---------- 各ページ ---------- */
+function pageKihon() {
+  const c = S.cfg;
+  return `
+<section class="card"><h2>店舗と人数</h2>
+ <div class="row">
+  ${fld('店舗名（画像の見出し。空欄でも可）', txt('f-store', 'cfg.storeName', c.storeName, 'w-l', '店舗名'))}
+  ${fld('最低人数（全日共通）', num('f-min', 'cfg.minStaff', c.minStaff, { min: 1 }))}
+  ${fld('多めに置く日の人数', num('f-pri', 'cfg.priStaff', c.priStaff, { min: 1 }))}
+  ${fld('1日の上限人数', num('f-max', 'cfg.maxStaff', c.maxStaff, { min: 1 }))}
+  ${fld('繁忙期の人数', num('f-busy', 'cfg.busyStaff', c.busyStaff, { min: 1 }))}
+ </div>
+ <p class="muted">土日祝・納品日・イベント日は、人に余裕があるときに「多めに置く日の人数」まで優先して増やします。足りなければ最低人数のままで作ります。優先順は、繁忙期 → 予算の高い土日祝 → 納品日 → イベント日 → 残りの日の予算が高い順です。繁忙期の日付は「事前登録」のページで指定します。繁忙期の人数が1日の上限より多いときは、繁忙期の日だけその人数まで置きます。</p>
+ <div class="row c">${sw('f-kan', 'cfg.includeKan', c.includeKan, '休館日を公休に含める')}</div>
+ <div><p class="muted" style="margin-bottom:6px">納品の曜日（新しい月の初期値になります）</p>
+  <div class="row c"><div class="chips">${DOW.map((w, i) => chip('f-nou' + i, 'noudow.' + i, c.nouDows.includes(i), w)).join('')}</div>
+  <button class="btn text" data-a="applynou">${S.m}月に反映</button></div></div>
+</section>
+<section class="card"><h2>勤務パターン</h2>
+ <div class="row">${[['E', '早番'], ['M', '中番'], ['L', '遅番'], ['F', '通し']].map(([k, n]) => `
+  ${fld(n + 'の記号', txt('f-sd' + k + 'l', 'sd.' + k + '.label', c.shiftDefs[k].label, 'w-s'))}
+  ${fld(n + 'の時間', txt('f-sd' + k + 't', 'sd.' + k + '.time', c.shiftDefs[k].time, 'w-m'))}`).join('')}</div>
+ <p class="muted">通しは自動では使いません。事前登録か、できあがった表のマスで指定した日・人にだけ入ります。</p>
+ <h2 style="margin-top:8px">短縮営業日の勤務パターン</h2>
+ <div class="row">${[['E', '早番'], ['M', '中番'], ['L', '遅番'], ['F', '通し']].map(([k, n]) => `
+  ${fld(n + 'の記号', txt('f-ss' + k + 'l', 'ssd.' + k + '.label', c.shortDefs[k].label, 'w-s'))}
+  ${fld(n + 'の時間', txt('f-ss' + k + 't', 'ssd.' + k + '.time', c.shortDefs[k].time, 'w-m'))}`).join('')}</div>
+ <div class="row c">${sw('f-ssingle', 'cfg.shortSingle', c.shortSingle, '短縮営業日は全員を通し（開店から閉店まで1つの番）にする')}</div>
+ <p class="muted">年末年始などで営業時間が短い日は、「事前登録」のページで「短縮」に印を付けます。その日は、ここで決めた記号と時間で早番・遅番を割り当てます。営業時間が勤務時間内に収まる日は、上のスイッチを入れると全員が通しになり、開店と閉店の両方を担当します。</p>
+</section>
+<section class="card"><h2>作成方針</h2>
+ <div class="row">
+  ${fld('連勤の上限', sel('f-streak', 'cfg.streakLimit', c.streakLimit, [2, 3, 4, 5, 6].map(n => [n, n + '日']), 'int'))}
+  ${fld('希望休の上限（0＝制限なし）', num('f-kibou', 'cfg.kibouMax', c.kibouMax))}
+ </div>
+ <div class="row c">${sw('f-plus1', 'cfg.allowPlus1', c.allowPlus1, `上限＋1日の連勤を月1回まで認める`)}</div>
+ <div class="row c">${sw('f-sand', 'cfg.avoidSandwich', c.avoidSandwich, '飛び石休み（休み・出勤・休み）を作らない')}</div>
+ <p class="muted">連勤には、出張・研修・他店ヘルプ・半休の日と、前月末からの連勤を含めて数えます。飛び石の判定では、有休と休館日も休みとして数えます。</p>
+ <div><p class="muted" style="margin-bottom:6px">番の決め方で優先すること</p>
+  <div class="seg" role="radiogroup">
+   <label><input type="radio" name="pol" id="f-pol1" data-k="cfg.shiftPolicy" value="dir" ${c.shiftPolicy === 'dir' ? 'checked' : ''}>番制優先（並びを守る）</label>
+   <label><input type="radio" name="pol" id="f-pol2" data-k="cfg.shiftPolicy" value="fair" ${c.shiftPolicy === 'fair' ? 'checked' : ''}>回数の公平優先</label>
+  </div></div>
+ <div class="row">
+  ${fld('責任者の出勤日', sel('f-cn', 'cfg.chiefNth', c.chiefNth, [[0, '指定しない'], [1, '毎月 第1'], [2, '毎月 第2'], [3, '毎月 第3'], [4, '毎月 第4']], 'int'))}
+  ${c.chiefNth ? fld('曜日', sel('f-cd', 'cfg.chiefDow', c.chiefDow, DOW.map((w, i) => [i, w + '曜日']), 'int')) : ''}
+ </div>
+</section>
+<section class="card"><h2>就業規則の上限</h2>
+ <div class="row">
+  ${fld('1日の実働時間', num('f-hpd', 'cfg.hoursPerDay', c.hoursPerDay, { t: 'float', step: 0.25 }))}
+  ${fld('月の労働時間の上限（0＝確認しない）', num('f-mh', 'cfg.monthHoursMax', c.monthHoursMax, { t: 'float', w: 'w-m' }))}
+ </div>
+ <p class="muted">入力した上限を超える人がいれば、シフト表の確認結果に違反として出します。半休は半日分で計算します。</p>
+</section>`;
+}
+function pageStaff() {
+  const c = S.cfg;
+  return `
+<section class="card"><div class="row c"><h2 style="margin:0">スタッフ（${c.emps.length}名）</h2><span style="flex:1"></span>
+  <button class="btn tonal" data-a="carry">前月の表から「前月末」を入力</button>
+  <button class="btn fill" data-a="addemp" ${c.emps.length >= 8 ? 'disabled' : ''}>追加</button></div>
+ <p class="muted">名前は記号でもかまいません。公休日数は「公休設定」のページで月ごとに決めます。</p>
+ ${c.emps.map(e => {
+    const p = 'emp.' + e.id + '.', i = 'e-' + e.id + '-';
+    return `<div class="staff"><div class="row">
+   ${fld('名前', txt(i + 'name', p + 'name', e.name))}
+   ${fld('雇用区分', sel(i + 'type', p + 'type', e.type, c.types.map(t => [t, t])))}
+   ${fld('役割', sel(i + 'role', p + 'role', e.role, [['', 'なし'], ['chief', '責任者']]))}
+   ${fld('番の並び', sel(i + 'dir', p + 'dir', e.dir, [['L2E', '遅番 → 早番'], ['E2L', '早番 → 遅番'], ['none', 'ルールなし']]))}
+   <span style="flex:1"></span><button class="ib" title="このスタッフを削除" aria-label="${esc(e.name)}を削除" data-a="delemp" data-id="${e.id}" ${c.emps.length <= 2 ? 'disabled' : ''}>${IC.del}</button></div>
+  <div class="row c">${sw(i + 'nb', p + 'newbie', e.newbie, '新人として扱う')}</div>
+  ${e.newbie ? `<div class="sub"><h3>新人の設定（この人が新人のあいだだけ働きます）</h3>
+   <div><p class="muted" style="margin-bottom:6px">バディ（複数選べます。新人の出勤日に、このうち1人以上が店頭にいるように組みます）</p>
+    <div class="chips">${c.emps.filter(x => x.id !== e.id).map(x => chip(i + 'bd' + x.id, 'empbud.' + e.id + '.' + x.id, e.buddies.includes(x.id), esc(x.name))).join('')}</div></div>
+   <div class="row c">${sw(i + 'ss', p + 'sameShift', e.sameShift, 'バディと同じ番に入れる')}</div>
+   <div class="row c">${sw(i + 'nc', p + 'noCount', e.noCount, '最低人数に数えない（追加の人員として置く）')}</div>
+   <p class="muted">「最低人数に数えない」を入れると、この人は店頭人数と開店・閉店の要員に数えず、ほかのスタッフだけで人数がそろうように組みます。入れる番を絞りたいときは、下の勤務制限を使ってください。</p></div>` : ''}
+  <details ${e._open ? 'open' : ''} data-id="${e.id}"><summary>勤務制限・前月末</summary><div class="row" style="align-items:stretch">
+   <div class="sub"><h3>入れる番（時短などの勤務制限）</h3>
+    <div class="chips">${['E', 'M', 'L'].map(s => chip(i + 'al' + s, 'empallow.' + e.id + '.' + s, e.allow[s] !== false, LONG[s])).join('')}</div>
+    <div class="row">${fld('適用開始（空欄＝ずっと）', `<input id="${i}rf" type="date" data-k="${p}restrFrom" value="${esc(e.restrFrom)}">`)}${fld('適用終了', `<input id="${i}rt" type="date" data-k="${p}restrTo" value="${esc(e.restrTo)}">`)}</div></div>
+   <div class="sub"><h3>前月末</h3>
+    <div class="row">${fld('前月末の状況', sel(i + 'cr', p + 'carryRun', e.carryRun, [[0, '月末は休み'], [1, '1連勤中'], [2, '2連勤中'], [3, '3連勤中'], [4, '4連勤中'], [5, '5連勤中'], [6, '6連勤中']], 'int'))}
+    ${e.carryRun ? fld('最終日の番', sel(i + 'cs', p + 'carryShift', e.carryShift, [['', '指定なし'], ['E', '早番'], ['M', '中番'], ['L', '遅番']])) : ''}</div>
+    ${sw(i + 'po', p + 'prevOver', e.prevOver, '前月に上限超えの連勤あり')}</div>
+  </div></details></div>`;
+  }).join('')}
+</section>
+<section class="card"><div class="row c"><h2 style="margin:0">定例業務（できる人を出勤させる）</h2><span style="flex:1"></span><button class="btn fill" data-a="addtask">業務を追加</button></div>
+ <p class="muted">発注や備品の注文など、決まった曜日に担当できる人が必要な業務を登録します。その曜日に、できる人が1人以上店頭にいるように休みを組みます。組めなかった日は確認結果に出します。隔週の業務は、実施する日を1つ入れると、その週から1週おきの週だけが対象になります（月をまたいでも続きます）。年末年始や連休で日程が変わる月は、「事前登録」のページでその月だけ実施日を変えられます。</p>
+ ${c.tasks.length ? c.tasks.map(t => `<div class="staff"><div class="row">
+   ${fld('業務名', txt('tk-' + t.id + '-n', 'task.' + t.id + '.name', t.name, 'w-m', '例：発注'))}
+   ${fld('頻度', sel('tk-' + t.id + '-f', 'task.' + t.id + '.freq', t.freq || 'w', [['w', '毎週'], ['bi', '隔週']]))}
+   ${t.freq === 'bi' ? fld('実施日を1つ（ここから1週おき）', `<input id="tk-${t.id}-a" type="date" data-k="task.${t.id}.anchor" value="${esc(t.anchor || '')}">`) : ''}
+   ${fld('出勤させる日', sel('tk-' + t.id + '-m', 'task.' + t.id + '.mode', t.mode, [['each', '選んだ曜日すべて'], ['any', '選んだ曜日のどれか1日（週ごと）']]))}
+   <span style="flex:1"></span><button class="ib" title="この業務を削除" aria-label="${esc(t.name)}を削除" data-a="deltask" data-id="${t.id}">${IC.del}</button></div>
+   <div><p class="muted" style="margin-bottom:6px">曜日</p><div class="chips">${DOW.map((w, d) => chip('tk-' + t.id + '-d' + d, 'taskdow.' + t.id + '.' + d, t.dows.includes(d), w)).join('')}</div></div>
+   <div><p class="muted" style="margin-bottom:6px">シフト表の備考に出す曜日（選ばなければ、「どれか1日」の業務は最後の曜日だけ、それ以外は上の曜日すべてに出します）</p><div class="chips">${t.dows.slice().sort().map(d => chip('tk-' + t.id + '-s' + d, 'taskshow.' + t.id + '.' + d, (t.showDows || []).includes(d), DOW[d])).join('') || '<span class="muted">先に曜日を選んでください</span>'}</div></div>
+   <div><p class="muted" style="margin-bottom:6px">できる人</p><div class="chips">${c.emps.map(e => chip('tk-' + t.id + '-e' + e.id, 'taskmem.' + t.id + '.' + e.id, t.members.includes(e.id), esc(e.name))).join('')}</div></div></div>`).join('') : '<p class="muted">まだ登録がありません。</p>'}
+</section>`;
+}
+function pageKokyu() {
+  const c = S.cfg, mon = S.mon, days = daysOf();
+  const kanN = Object.keys(mon.kan).filter(d => mon.kan[d] && +d <= days).length;
+  const used = c.types.filter(t => c.emps.some(e => e.type === t));
+  return `
+<section class="card"><h2>${S.y}年${S.m}月の公休日数</h2>
+ <p class="muted">雇用区分ごとの日数を入れ、区分と違う人だけ「個別の日数」に入れてください。希望休は公休の日数に含めて数えます。有休・半休は別に数えます。</p>
+ <div class="row">${c.types.map((t, i) => fld(esc(t) + (used.includes(t) ? '' : '（該当者なし）'), num('k-t' + i, 'ktype.' + i, mon.kType[t] ?? '', { max: days }))).join('')}</div>
+</section>
+<section class="card out"><h2>スタッフごとの日数</h2>
+ <div class="tw"><table><thead><tr><th class="l">名前</th><th>雇用区分</th><th>区分の日数</th><th>個別の日数</th><th>この月の公休</th><th>うち希望休</th>${c.includeKan ? '<th>うち休館日</th>' : ''}<th>自動で置く日数</th></tr></thead><tbody>
+ ${c.emps.map(e => {
+    let kb = 0; for (let d = 1; d <= days; d++) if (!mon.kan[d] && mon.pre[e.id + '-' + d] === 'KB') kb++;
+    const k = kokyuuOf(e), rest = k - kb - (c.includeKan ? kanN : 0);
+    return `<tr><td class="l">${esc(e.name)}</td><td>${esc(e.type)}</td><td>${mon.kType[e.type] ?? '-'}</td>
+    <td><input class="bud" id="k-i${e.id}" type="number" inputmode="numeric" min="0" max="${days}" data-k="kind.${e.id}" value="${esc(mon.kInd[e.id] ?? '')}" placeholder="区分どおり" aria-label="${esc(e.name)}の個別の日数"></td>
+    <td><b>${k}</b></td><td>${kb}</td>${c.includeKan ? `<td>${kanN}</td>` : ''}<td class="${rest < 0 ? 'num low' : ''}">${rest}</td></tr>`;
+  }).join('')}</tbody></table></div>
+ <p class="muted">「自動で置く日数」がマイナスの人は、事前登録の休みが公休日数を超えています。</p>
+</section>`;
+}
+const dowCls = I => I.hol || I.dow === 0 ? 'sun' : I.dow === 6 ? 'sat' : '';
+const rowCls = I => (I.hol || I.dow === 0 ? 'pri' : I.dow === 6 ? 'sat6' : '') + (I.busy ? ' bz' : '');
+function pageToroku() {
+  const c = S.cfg, mon = S.mon, days = daysOf(), info = buildDayInfo(S.y, S.m, mon);
+  const cd = c.chiefNth ? nthDow(S.y, S.m, c.chiefNth, c.chiefDow) : 0;
+  let rows = '';
+  for (let d = 1; d <= days; d++) {
+    const I = info[d], ck = (f) => `<td><input type="checkbox" id="t-${f}${d}" data-k="flag.${f}.${d}" data-t="bool" ${mon[f][d] ? 'checked' : ''} aria-label="${d}日"></td>`;
+    rows += `<tr class="${rowCls(I)}"><td class="dt ${dowCls(I)}"><b>${d}</b></td><td class="dw ${dowCls(I)}">${DOW[I.dow]}</td>${ck('hol')}${ck('kan')}${ck('short')}${ck('busy')}${ck('nou')}${ck('ev')}
+    <td class="${dowCls(I)}"><input class="bud" id="t-b${d}" type="number" inputmode="numeric" min="0" data-k="budget.${d}" value="${esc(mon.budget[d] ?? '')}" aria-label="${d}日の予算"></td>
+    ${c.emps.map(e => {
+      const p = I.kan ? 'KAN' : mon.pre[e.id + '-' + d], selc = S.pick && S.pick.mode === 'pre' && S.pick.id === e.id && S.pick.d === d;
+      let hint = '';
+      if (!p) { if (cd === d && e.role === 'chief') hint = '責'; else if (c.tasks.some(t => t.members.includes(e.id) && ((mon.taskEx[t.id]?.add || {})[d] || (taskOn(t, S.y, S.m, d, I.dow) && !(mon.taskEx[t.id]?.skip || {})[d])))) hint = '担'; }
+      return `<td class="cell ${p ? 'k-' + p : 'hint'} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="pre" data-id="${e.id}" data-d="${d}">${p ? lab(p, d) : hint}</td>`;
+    }).join('')}</tr>`;
+  }
+  return `
+<section class="card out"><h2>${S.y}年${S.m}月の事前登録</h2>
+ <p class="muted">マスを押すと、希望休・有休・半休・出張・研修・他店ヘルプ・必須出勤・番の指定を選べます。予算は入れた日だけ使います（単位は自由）。「責」は責任者の出勤日、「担」は定例業務の曜日です。「短縮」は短縮営業日です。</p>
+ <div class="row"><label class="fld">繁忙期の開始日<input id="bz-from" class="w-s" type="number" inputmode="numeric" min="1" max="${days}" placeholder="日"></label><label class="fld">終了日<input id="bz-to" class="w-s" type="number" inputmode="numeric" min="1" max="${days}" placeholder="日"></label>
+  <button class="btn tonal" data-a="busyset" data-v="1">この期間を繁忙期にする</button><button class="btn text" data-a="busyset" data-v="0">この期間を解除</button>
+  <span class="muted" style="align-self:center">繁忙期：${Object.keys(mon.busy).filter(d => mon.busy[d] && +d <= days).length}日（${c.busyStaff}名を目標に配置）</span></div>
+ <div class="tw"><table><thead><tr><th>日</th><th>曜</th><th>祝</th><th>休館</th><th>短縮</th><th>繁忙期</th><th>納品</th><th>ｲﾍﾞﾝﾄ</th><th>予算</th>${c.emps.map(e => `<th>${esc(e.name)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+ <div class="row c"><button class="btn fill" data-a="gototab" data-tab="shift">シフト表へ進む</button></div>
+</section>
+${c.tasks.filter(t => t.dows.length).length ? `<section class="card"><h2>定例業務の日程変更（${S.m}月だけ）</h2>
+ <p class="muted">年末年始・大型連休・お盆などで実施日が変わるときに使います。行わない日は印を外し、代わりに行う日を追加してください。追加した日は、できる人がその日に出勤するように組み、備考にも出します。</p>
+ ${c.tasks.filter(t => t.dows.length).map(t => {
+    const ex = mon.taskEx[t.id] || {}, reg = [], add = Object.keys(ex.add || {}).map(Number).filter(d => d <= days).sort((a, b) => a - b);
+    for (let d = 1; d <= days; d++) if (!info[d].kan && taskOn(t, S.y, S.m, d, info[d].dow)) reg.push(d);
+    return `<div class="staff"><div class="row c"><b>${esc(t.name || '（名前なし）')}</b><span class="muted">${t.mode === 'any' ? '週ごとに、印のある日のどれか1日' : '印のある日すべて'}</span></div>
+   <div><p class="muted" style="margin-bottom:6px">通常の実施日</p><div class="chips">${reg.map(d => chip('tx-' + t.id + '-k' + d, 'tskip.' + t.id + '.' + d, !(ex.skip || {})[d], d + '日（' + DOW[info[d].dow] + '）')).join('') || '<span class="muted">この月はありません</span>'}</div></div>
+   <div class="row">${add.length ? `<div><p class="muted" style="margin-bottom:6px">追加した日</p><div class="chips">${add.map(d => chip('tx-' + t.id + '-a' + d, 'tadd.' + t.id + '.' + d, true, d + '日（' + DOW[info[d].dow] + '）')).join('')}</div></div>` : ''}
+    <label class="fld">代わりに行う日<input id="tx-${t.id}-new" class="w-s" type="number" inputmode="numeric" min="1" max="${days}" placeholder="日"></label><button class="btn tonal" data-a="addtday" data-id="${t.id}">この日を追加</button></div></div>`;
+  }).join('')}
+</section>` : ''}`;
+}
+function pageShift() {
+  const c = S.cfg, mon = S.mon, days = daysOf(), res = mon.result;
+  const head = `<section class="card"><div class="row c"><h2 style="margin:0">${S.y}年${S.m}月のシフト表</h2><span style="flex:1"></span>
+   ${S.busy ? '<span class="busy"><span class="spin"></span>作成中…</span>' : `
+   <button class="btn fill" data-a="gen">${res ? '作り直す' : 'シフトを作成'}</button>
+   ${res ? '<button class="btn tonal" data-a="regen">別の案を作成</button><button class="btn outl" data-a="png">画像で保存</button>' : ''}`}</div>
+   <p class="muted">${res ? '作り直すと、手で直した内容は上書きされます。マスを押すと1日ずつ直せます。直した後も下の確認結果はその場で更新されます。' : '休みを先に置き、次に番を割り当てます。最低人数を下回る日が出た場合は、そのまま作るかヘルプを要請するかを選べます。'}</p></section>`;
+  if (!res) return head;
+  const cx = ctx(), chk = checkResult(cx, res), info = cx.info, help = res.help || [];
+  let rows = '';
+  for (let d = 1; d <= days; d++) {
+    const I = info[d], n = chk.dayCount[d];
+    const memo = [I.hol ? '祝日' : '', I.kan ? '休館日' : '', I.busy ? '繁忙期' : '', mon.short[d] ? '短縮営業' : '', I.nou ? '納品' : '', I.ev ? 'イベント' : ''].concat(I.kan ? [] : c.tasks.filter(t => t.name && taskShown(t, S.y, S.m, d, I.dow, mon.taskEx[t.id])).map(t => t.name)).filter(Boolean).join('・');
+    rows += `<tr class="${rowCls(I)}"><td class="dt ${dowCls(I)}"><b>${d}</b></td><td class="dw ${dowCls(I)}">${DOW[I.dow]}</td>
+    ${c.emps.map(e => {
+      const v = res.cells[e.id] ? res.cells[e.id][d] : null, selc = S.pick && S.pick.mode === 'res' && S.pick.id === e.id && S.pick.d === d;
+      return `<td class="cell ${v ? 'k-' + v : ''} ${chk.bad.has(e.id + '-' + d) ? 'bad' : ''} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="res" data-id="${e.id}" data-d="${d}">${v ? lab(v, d) : ''}</td>`;
+    }).join('')}
+    ${help.map((col, j) => { const v = col[d], selc = S.pick && S.pick.mode === 'help' && S.pick.id === j && S.pick.d === d; return `<td class="cell ${isShift(v) ? 'k-' + v : ''} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="help" data-id="${j}" data-d="${d}">${isShift(v) ? lab(v, d) : ''}</td>`; }).join('')}
+    <td class="num ${!I.kan && n < c.minStaff ? 'low' : ''}">${I.kan ? '-' : n}</td>${Object.keys(mon.budget).some(k => mon.budget[k]) ? `<td class="${dowCls(I)}">${I.budget ? I.budget.toLocaleString() : ''}</td>` : ''}<td class="l muted">${esc(memo)}</td></tr>`;
+  }
+  const hasB = Object.keys(mon.budget).some(k => mon.budget[k]);
+  const sumRows = [['公休', (s, e) => s.kokyuu, (s, e) => s.kokyuu !== cx.kokyuu[e.id]], ['うち希望休', s => s.kb], ['有休', s => s.y], ['出勤日数', s => s.work], ['土日祝の出勤', s => s.weekend],
+  [LONG.E, s => s.E], [LONG.M, s => s.M], [LONG.L, s => s.L], ['最長連勤', s => s.max, s => s.max > c.streakLimit + (c.allowPlus1 ? 1 : 0)]]
+    .map(([n, f, ng]) => `<tr class="sum"><td colspan="2" class="l">${n}</td>${c.emps.map((e, i) => `<td class="${ng && ng(chk.stats[i], e) ? 'ng' : ''}">${f(chk.stats[i], e)}</td>`).join('')}${help.map(() => '<td></td>').join('')}<td colspan="${hasB ? 3 : 2}" class="l muted">${n === '公休' ? '平均 ' + chk.avg.toFixed(1) + '名／日' : ''}</td></tr>`).join('');
+  const R = chk.rules, rl = [['労働時間の上限', c.monthHoursMax ? R[0] : null], ['公休日数', R[1]], ['事前登録を動かさない', R[2]], ['勤務制限', R[3]], ['開店・閉店の要員', R[4]], ['条件の衝突は報告', true]];
+  return head + `
+<section class="card out">
+ <div class="tw"><table><thead><tr><th>日</th><th>曜</th>${c.emps.map(e => `<th>${esc(e.name)}${e.role === 'chief' || e.newbie ? `<small>${[e.role === 'chief' ? '責任者' : '', e.newbie ? '新人' : ''].filter(Boolean).join('・')}</small>` : ''}</th>`).join('')}${help.map((x, j) => `<th>ヘルプ${help.length > 1 ? j + 1 : ''}<small>要請</small></th>`).join('')}<th>人数</th>${hasB ? '<th>予算</th>' : ''}<th class="l">備考</th></tr></thead>
+ <tbody>${rows}${sumRows}</tbody></table></div>
+ <div class="legend">${['E', 'M', 'L', 'F'].map(k => `<span class="k-${k}">${esc(lab(k))}＝${LONG[k]} ${esc(c.shiftDefs[k].time)}</span>`).join('')}${['K', 'KB', 'Y', 'HA', 'HP', 'S', 'T', 'O', 'KAN'].map(k => `<span class="k-${k}">${SHORT[k]}＝${LONG[k]}</span>`).join('')}</div>
+ ${Object.keys(mon.short).some(d => mon.short[d]) ? `<div class="legend"><span>短縮営業日</span>${['E', 'M', 'L', 'F'].filter(k => c.shortDefs[k].time || k !== 'F').map(k => `<span>${esc(c.shortDefs[k].label)}＝${LONG[k]} ${esc(c.shortDefs[k].time)}</span>`).join('')}</div>` : ''}
+</section>
+<section class="card"><h2>確認結果</h2>
+ <div class="rules">${rl.map(([n, ok], i) => `<span class="rule ${ok === null ? 'na' : ok ? '' : 'ng'}">共通ルール${i + 1} ${n}：${ok === null ? '上限未設定' : ok ? '合格' : '違反あり'}</span>`).join('')}</div>
+ ${chk.errors.length ? `<div class="note err"><b>禁止ルール違反（要修正 ${chk.errors.length}件）</b><ul>${chk.errors.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+ ${chk.warns.length ? `<div class="note warn"><b>注意（作成者の判断が必要 ${chk.warns.length}件）</b><ul>${chk.warns.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+ ${!chk.errors.length && !chk.warns.length ? '<div class="note ok"><b>すべての条件を満たしています。</b></div>' : ''}
+ ${chk.errors.length ? '<p class="muted">赤枠のマスが違反箇所です。希望休や人数の条件どうしがぶつかって直せない場合は、ここに残ったものがその組み合わせです。条件は自動では緩めていません。</p>' : ''}
+</section>`;
+}
+function sheet() {
+  const p = S.pick; if (!p) return '';
+  const I = buildDayInfo(S.y, S.m, S.mon)[p.d];
+  let name, cur, codes;
+  if (p.mode === 'help') { name = 'ヘルプ' + (S.mon.result.help.length > 1 ? p.id + 1 : ''); cur = S.mon.result.help[p.id][p.d]; codes = ['', 'E', 'M', 'L']; }
+  else {
+    const e = S.cfg.emps.find(x => x.id === p.id); if (!e) return ''; name = e.name;
+    if (p.mode === 'pre') { cur = S.mon.pre[p.id + '-' + p.d]; codes = ['', 'KB', 'Y', 'HA', 'HP', 'S', 'T', 'O', 'W', 'E', 'M', 'L', 'F']; }
+    else { cur = S.mon.result.cells[p.id]?.[p.d]; codes = ['E', 'M', 'L', 'F', 'K', 'KB', 'Y', 'HA', 'HP', 'S', 'T', 'O']; }
+  }
+  return `<div class="sheet" role="dialog" aria-label="内容を選ぶ"><div class="sheet-in"><div class="ttl"><span>${esc(name)}　${S.m}月${p.d}日（${DOW[I.dow]}）${p.mode === 'pre' ? 'の事前登録' : ''}</span><span style="flex:1"></span><button class="ib" data-a="closepick" aria-label="閉じる">${IC.x}</button></div>
+  <div class="codes">${codes.map(k => `<button class="code ${k ? 'k-' + k : 'clr'} ${(cur || '') === k ? 'cur' : ''}" data-a="setcode" data-code="${k}">${k ? esc(longLab(k, p.d)) : (p.mode === 'help' ? 'なし' : '指定なし')}</button>`).join('')}</div></div></div>`;
+}
+function dialog() {
+  const d = S.dlg; if (!d) return '';
+  let body = '';
+  if (d.type === 'short') {
+    const need = d.placed.shortage.reduce((a, s) => a + s.lack, 0);
+    body = `<h2>最低人数を下回る日があります</h2>
+    <p>公休・希望休・連勤の条件を守ると、次の日は最低${S.cfg.minStaff}名に届きません。</p>
+    <div class="note warn"><ul>${d.placed.shortage.map(s => `<li>${s.d}日（${DOW[new Date(S.y, S.m - 1, s.d).getDay()]}）：${s.n}名　あと${s.lack}名</li>`).join('')}</ul></div>
+    <button class="opt" data-a="dlg" data-v="help"><b>ヘルプを要請して作る</b><span>足りない日にだけヘルプの枠を入れます（延べ${need}人日）。要請できるかを確認してから選んでください。</span></button>
+    <button class="opt" data-a="dlg" data-v="asis"><b>このまま作る</b><span>人数割れの日を残したまま作り、確認結果に「了承済み」として表示します。</span></button>
+    <div class="acts"><button class="btn text" data-a="dlg" data-v="cancel">やめる</button></div>`;
+  } else if (d.type === 'img') {
+    body = `<h2>シフト表の画像</h2><img src="${d.url}" alt="シフト表"><p class="muted">保存が始まらないときは、画像を長押し（パソコンでは右クリック）して保存してください。</p><div class="acts"><button class="btn text" data-a="dlg" data-v="cancel">閉じる</button></div>`;
+  } else if (d.type === 'del') {
+    body = `<h2>${esc(d.name)}を削除しますか</h2><p>このスタッフの事前登録と、今月の作成済みのシフト表も消えます。</p><div class="acts"><button class="btn text" data-a="dlg" data-v="cancel">やめる</button><button class="btn fill" data-a="dlg" data-v="del">削除する</button></div>`;
+  } else body = `<h2>${esc(d.title)}</h2><p>${esc(d.msg)}</p><div class="acts"><button class="btn text" data-a="dlg" data-v="cancel">閉じる</button></div>`;
+  return `<div class="scrim"><div class="dlg" role="alertdialog" aria-modal="true">${body}</div></div>`;
+}
+function render() {
+  const ae = document.activeElement, fid = ae && ae.id, sx = window.scrollX, sy = window.scrollY;
+  const page = { kihon: pageKihon, staff: pageStaff, kokyu: pageKokyu, toroku: pageToroku, shift: pageShift }[S.tab]();
+  document.getElementById('app').innerHTML = `
+<header class="bar"><div class="bar-in"><h1>月間シフト作成ツール</h1><span class="sp"></span>
+ <div class="ym"><button class="ib" data-a="prevm" aria-label="前の月">${IC.l}</button>
+  <select class="in" id="ym-y" data-k="ym.y" data-t="int" aria-label="年">${[-1, 0, 1, 2].map(o => now.getFullYear() + o).concat(S.y).filter((v, i, a) => a.indexOf(v) === i).sort().map(v => `<option value="${v}" ${v === S.y ? 'selected' : ''}>${v}年</option>`).join('')}</select>
+  <select class="in" id="ym-m" data-k="ym.m" data-t="int" aria-label="月">${Array.from({ length: 12 }, (x, i) => `<option value="${i + 1}" ${i + 1 === S.m ? 'selected' : ''}>${i + 1}月</option>`).join('')}</select>
+  <button class="ib" data-a="nextm" aria-label="次の月">${IC.r}</button></div>
+ <span class="muted">${S.saved ? 'このブラウザに自動保存' : '保存できません（閉じると消えます）'}</span></div>
+ <nav class="tabs" role="tablist">${TABS.map(([k, n]) => `<button class="tab" role="tab" aria-selected="${S.tab === k}" data-a="gototab" data-tab="${k}">${n}</button>`).join('')}</nav><div class="bar-line"></div></header>
+<main>${page}</main>${sheet()}${dialog()}`;
+  if (fid) { const el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { } } }
+  window.scrollTo(sx, sy);
+}
+
+/* ---------- 操作 ---------- */
+function setTab(t) { S.tab = t; S.pick = null; try { if (location.hash !== '#' + t) history.replaceState(null, '', '#' + t); } catch (e) { } render(); window.scrollTo(0, 0); }
+function changeMonth(y, m) { save(); if (m < 1) { y--; m = 12; } if (m > 12) { y++; m = 1; } S.y = y; S.m = m; loadMon(); render(); }
+function onChange(el) {
+  const k = el.dataset.k; if (!k) return;
+  const t = el.dataset.t, c = S.cfg, mon = S.mon;
+  let v = el.type === 'checkbox' ? el.checked : el.value;
+  if (t === 'int') v = Math.max(0, Math.round(+v || 0)); else if (t === 'float') v = Math.max(0, +v || 0);
+  const p = k.split('.');
+  if (p[0] === 'ym') { changeMonth(p[1] === 'y' ? v : S.y, p[1] === 'm' ? v : S.m); return; }
+  if (p[0] === 'cfg') {
+    c[p[1]] = v;
+    c.minStaff = Math.max(1, c.minStaff); c.priStaff = Math.max(c.minStaff, c.priStaff); c.maxStaff = Math.max(c.priStaff, c.maxStaff); c.busyStaff = Math.max(c.minStaff, c.busyStaff || c.priStaff);
+  } else if (p[0] === 'sd') c.shiftDefs[p[1]][p[2]] = v;
+  else if (p[0] === 'ssd') c.shortDefs[p[1]][p[2]] = v;
+  else if (p[0] === 'task') c.tasks.find(x => x.id === p[1])[p[2]] = v;
+  else if (p[0] === 'taskdow') { const t = c.tasks.find(x => x.id === p[1]), d = +p[2]; t.dows = t.dows.filter(x => x !== d); if (v) t.dows.push(d); t.showDows = (t.showDows || []).filter(x => t.dows.includes(x)); }
+  else if (p[0] === 'taskshow') { const t = c.tasks.find(x => x.id === p[1]), d = +p[2]; t.showDows = (t.showDows || []).filter(x => x !== d); if (v) t.showDows.push(d); }
+  else if (p[0] === 'tskip') { const ex = mon.taskEx[p[1]] = mon.taskEx[p[1]] || {}; ex.skip = ex.skip || {}; if (v) delete ex.skip[p[2]]; else ex.skip[p[2]] = true; }
+  else if (p[0] === 'tadd') { const ex = mon.taskEx[p[1]] || {}; if (!v && ex.add) delete ex.add[p[2]]; }
+  else if (p[0] === 'taskmem') { const t = c.tasks.find(x => x.id === p[1]); t.members = t.members.filter(x => x !== p[2]); if (v) t.members.push(p[2]); }
+  else if (p[0] === 'noudow') { const d = +p[1]; c.nouDows = c.nouDows.filter(x => x !== d); if (v) c.nouDows.push(d); }
+  else if (p[0] === 'emp') { const e = c.emps.find(x => x.id === p[1]); e[p[2]] = v; if (p[2] === 'carryRun' && !v) e.carryShift = ''; }
+  else if (p[0] === 'empbud') { const e = c.emps.find(x => x.id === p[1]); e.buddies = e.buddies.filter(x => x !== p[2]); if (v) e.buddies.push(p[2]); }
+  else if (p[0] === 'empallow') { c.emps.find(x => x.id === p[1]).allow[p[2]] = v; }
+  else if (p[0] === 'flag') { if (v) mon[p[1]][p[2]] = true; else delete mon[p[1]][p[2]]; }
+  else if (p[0] === 'budget') { if (el.value === '') delete mon.budget[p[1]]; else mon.budget[p[1]] = Math.max(0, +el.value || 0); }
+  else if (p[0] === 'ktype') { const ty = c.types[+p[1]]; mon.kType[ty] = v; c.lastKokyuu[ty] = v; }
+  else if (p[0] === 'kind') { if (el.value === '') delete mon.kInd[p[1]]; else mon.kInd[p[1]] = v = Math.max(0, Math.round(+el.value || 0)); }
+  save(); setTimeout(render, 0);
+}
+function generate(bump) {
+  if (bump) S.mon.seed = (S.mon.seed | 0) + 1;
+  S.busy = true; S.pick = null; render();
+  setTimeout(() => {
+    const cx = ctx(), placed = placeRests(cx, S.mon.seed | 0);
+    S.busy = false;
+    if (placed.shortage.length) { S.dlg = { type: 'short', placed, cx }; render(); return; }
+    S.mon.result = finalize(cx, placed, 'asis'); save(); render();
+  }, 40);
+}
+function carryFromPrev() {
+  const py = S.m === 1 ? S.y - 1 : S.y, pm = S.m === 1 ? 12 : S.m - 1, prev = store.get(mkey(py, pm), null);
+  if (!prev || !prev.result) { S.dlg = { type: 'msg', title: '前月の表がありません', msg: `${py}年${pm}月に作成済みのシフト表が保存されていないため、自動入力できません。各スタッフの「前月末」を手で入れてください。` }; render(); return; }
+  const n = new Date(py, pm, 0).getDate();
+  S.cfg.emps.forEach(e => {
+    const row = prev.result.cells[e.id]; if (!row) return;
+    let run = 0; for (let d = n; d >= 1 && row[d] !== null && isWork(row[d]); d--) run++;
+    let last = ''; for (let d = n; d > n - run && !last; d--) { const c = row[d]; if (isShift(c)) last = c; else if (c === 'HA') last = 'L'; else if (c === 'HP') last = 'E'; }
+    let over = false, st = 0;
+    for (let d = 1; d <= n + 1; d++) { const w = d <= n && row[d] !== null && isWork(row[d]); if (w) st++; else { if (st > S.cfg.streakLimit) over = true; st = 0; } }
+    e.carryRun = Math.min(6, run); e.carryShift = run ? last : ''; e.prevOver = over; e._open = true;
+  });
+  save(); S.dlg = { type: 'msg', title: '前月末を入力しました', msg: `${py}年${pm}月のシフト表から、月末の連勤数・最終日の番・上限超えの有無を各スタッフに入れました。` }; render();
+}
+function onClick(el) {
+  const a = el.dataset.a, mon = S.mon, c = S.cfg;
+  if (a === 'gototab') return setTab(el.dataset.tab);
+  if (a === 'prevm') return changeMonth(S.y, S.m - 1);
+  if (a === 'nextm') return changeMonth(S.y, S.m + 1);
+  if (a === 'addemp') { if (c.emps.length < 8) { c.emps.push(newEmp(c.nextId++, c.emps.length + 1)); mon.result = null; } }
+  else if (a === 'delemp') { const e = c.emps.find(x => x.id === el.dataset.id); S.dlg = { type: 'del', id: e.id, name: e.name }; }
+  else if (a === 'addtask') c.tasks.push({ id: 't' + c.nextTask++, name: '', dows: [], members: [], mode: 'each', freq: 'w', anchor: '' });
+  else if (a === 'addtday') {
+    const id = el.dataset.id, d = Math.round(+document.getElementById('tx-' + id + '-new').value);
+    if (!d || d < 1 || d > daysOf()) S.dlg = { type: 'msg', title: '日付を入れてください', msg: '代わりに行う日を、1日から月末までの数字で入れてください。' };
+    else { const ex = mon.taskEx[id] = mon.taskEx[id] || {}; ex.add = ex.add || {}; ex.add[d] = true; }
+  }
+  else if (a === 'deltask') c.tasks = c.tasks.filter(t => t.id !== el.dataset.id);
+  else if (a === 'carry') return carryFromPrev();
+  else if (a === 'applynou') { mon.nou = {}; for (let d = 1; d <= daysOf(); d++) if (c.nouDows.includes(new Date(S.y, S.m - 1, d).getDay())) mon.nou[d] = true; S.dlg = { type: 'msg', title: '納品日を反映しました', msg: `${S.y}年${S.m}月の納品日を、選んだ曜日に合わせて入れ直しました。事前登録のページで日ごとに直せます。` }; }
+  else if (a === 'busyset') {
+    const f = +document.getElementById('bz-from').value, t = +document.getElementById('bz-to').value || f, n = daysOf();
+    if (!f || f < 1 || t < f || f > n) { S.dlg = { type: 'msg', title: '期間を入れてください', msg: '開始日と終了日を、1日から月末までの数字で入れてください（1日だけなら開始日のみでかまいません）。' }; }
+    else for (let d = f; d <= Math.min(t, n); d++) { if (el.dataset.v === '1') mon.busy[d] = true; else delete mon.busy[d]; }
+  }
+  else if (a === 'pick') { const id = el.dataset.mode === 'help' ? +el.dataset.id : el.dataset.id, d = +el.dataset.d; if (el.dataset.mode !== 'help' && mon.kan[d]) return; S.pick = { mode: el.dataset.mode, id, d }; }
+  else if (a === 'closepick') S.pick = null;
+  else if (a === 'setcode') {
+    const p = S.pick, code = el.dataset.code;
+    if (p.mode === 'pre') { if (code) mon.pre[p.id + '-' + p.d] = code; else delete mon.pre[p.id + '-' + p.d]; }
+    else if (p.mode === 'help') mon.result.help[p.id][p.d] = code || null;
+    else mon.result.cells[p.id][p.d] = code;
+    S.pick = null;
+  }
+  else if (a === 'gen') return generate(false);
+  else if (a === 'regen') return generate(true);
+  else if (a === 'png') return exportPng();
+  else if (a === 'dlg') {
+    const d = S.dlg, v = el.dataset.v; S.dlg = null;
+    if (d.type === 'short' && v !== 'cancel') mon.result = finalize(d.cx, d.placed, v);
+    if (d.type === 'del' && v === 'del') {
+      c.emps = c.emps.filter(x => x.id !== d.id); c.emps.forEach(x => { x.buddies = x.buddies.filter(b => b !== d.id); }); c.tasks.forEach(t => { t.members = t.members.filter(x => x !== d.id); });
+      Object.keys(mon.pre).forEach(k => { if (k.startsWith(d.id + '-')) delete mon.pre[k]; }); delete mon.kInd[d.id]; mon.result = null;
+    }
+  }
+  save(); render();
+}
+async function exportPng() {
+  const c = S.cfg, mon = S.mon, res = mon.result, cx = ctx(), chk = checkResult(cx, res), days = cx.days, info = cx.info, help = res.help || [];
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  const cols = c.emps.length + help.length, W0 = 44, W1 = 34, CW = 76, WN = 48, WM = 190, RH = 30, HH = 46, TH = 78, SR = 3;
+  const W = W0 + W1 + CW * cols + WN + WM, H = TH + HH + RH * (days + SR) + 2, cv = document.createElement('canvas'), sc = 2;
+  cv.width = W * sc; cv.height = H * sc;
+  const g = cv.getContext('2d'); g.scale(sc, sc); g.textBaseline = 'middle';
+  const F = (w, s) => `${w} ${s}px "Noto Sans JP","Hiragino Sans","Yu Gothic UI",sans-serif`;
+  const light = { K: '#dbe4d3', KB: '#dbe4d3', Y: '#dbe4d3', KAN: '#8f8ca0' };
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, TH);
+  g.fillStyle = '#161d1b'; g.font = F(700, 22); g.textAlign = 'left'; g.fillText(c.storeName || 'シフト表', 12, 26);
+  g.textAlign = 'right'; g.font = F(700, 18); g.fillText(`${S.y}年 ${S.m}月`, W - 12, 26);
+  g.textAlign = 'left'; g.font = F(400, 12); g.fillStyle = '#3f4947';
+  g.fillText(['E', 'M', 'L'].map(k => `${lab(k)}：${c.shiftDefs[k].time}（${LONG[k]}）`).join('　'), 12, 56);
+  const x0 = W0 + W1, xn = x0 + CW * cols, xm = xn + WN, y0 = TH;
+  g.fillStyle = '#f6f1e7'; g.fillRect(0, y0, W, HH);
+  g.fillStyle = '#161d1b'; g.font = F(700, 13); g.textAlign = 'center';
+  g.fillText('日', W0 / 2, y0 + HH / 2); g.fillText('曜', W0 + W1 / 2, y0 + HH / 2);
+  c.emps.forEach((e, i) => g.fillText(e.name, x0 + CW * i + CW / 2, y0 + HH / 2, CW - 6));
+  help.forEach((h, j) => g.fillText('ヘルプ' + (help.length > 1 ? j + 1 : ''), x0 + CW * (c.emps.length + j) + CW / 2, y0 + HH / 2));
+  g.fillText('人数', xn + WN / 2, y0 + HH / 2); g.textAlign = 'left'; g.fillText('備考', xm + 8, y0 + HH / 2);
+  for (let d = 1; d <= days; d++) {
+    const y = y0 + HH + RH * (d - 1), I = info[d], dc = I.hol || I.dow === 0 ? '#b3261e' : I.dow === 6 ? '#1b5fb5' : '#161d1b';
+    if (I.hol || I.dow === 0 || I.dow === 6) { g.fillStyle = I.dow === 6 && !I.hol ? '#f3e6d3' : '#f4dcdc'; g.fillRect(0, y, W0 + W1, RH); }
+    g.textAlign = 'center'; g.fillStyle = dc; g.font = F(700, 14); g.fillText(String(d), W0 / 2, y + RH / 2); g.font = F(400, 12); g.fillText(DOW[I.dow], W0 + W1 / 2, y + RH / 2);
+    const draw = (v, x) => { if (!v) return; g.fillStyle = light[v] || '#fff'; g.fillRect(x + 1, y + 1, CW - 2, RH - 2); g.fillStyle = v === 'KAN' ? '#fff' : v === 'KB' ? '#c00000' : '#161d1b'; g.font = F(isShift(v) || v === 'F' ? 700 : 400, isShift(v) || v === 'F' ? 13 : 11); g.fillText(lab(v, d), x + CW / 2, y + RH / 2); };
+    c.emps.forEach((e, i) => draw(res.cells[e.id]?.[d], x0 + CW * i));
+    help.forEach((h, j) => draw(isShift(h[d]) ? h[d] : null, x0 + CW * (c.emps.length + j)));
+    g.fillStyle = '#161d1b'; g.font = F(400, 12); g.fillText(I.kan ? '-' : String(chk.dayCount[d]), xn + WN / 2, y + RH / 2);
+    g.textAlign = 'left'; g.fillStyle = '#3f4947'; g.font = F(400, 11);
+    g.fillText([I.hol ? '祝日' : '', I.kan ? '休館日' : '', I.busy ? '繁忙期' : '', mon.short[d] ? '短縮営業' : '', I.nou ? '納品' : '', I.ev ? 'イベント' : ''].concat(I.kan ? [] : c.tasks.filter(t => t.name && taskShown(t, S.y, S.m, d, I.dow, mon.taskEx[t.id])).map(t => t.name)).filter(Boolean).join('・'), xm + 8, y + RH / 2, WM - 12);
+  }
+  const ys = y0 + HH + RH * days;
+  g.fillStyle = '#f8f3ea'; g.fillRect(0, ys, W, RH * SR);
+  [['公休', s => s.kokyuu], ['有休', s => s.y], ['出勤', s => s.work]].forEach(([n, f], r) => {
+    g.textAlign = 'left'; g.fillStyle = '#161d1b'; g.font = F(700, 12); g.fillText(n, 8, ys + RH * r + RH / 2);
+    g.textAlign = 'center'; g.font = F(400, 12); c.emps.forEach((e, i) => g.fillText(String(f(chk.stats[i])), x0 + CW * i + CW / 2, ys + RH * r + RH / 2));
+  });
+  g.strokeStyle = '#bec9c6'; g.lineWidth = .6;
+  const xs = [W0, x0]; for (let i = 1; i <= cols; i++) xs.push(x0 + CW * i); xs.push(xm);
+  xs.forEach(x => { g.beginPath(); g.moveTo(x + .25, TH); g.lineTo(x + .25, H); g.stroke(); });
+  for (let r = 0; r <= days + SR; r++) { const y = y0 + HH + RH * r; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+  g.lineWidth = 1.2; g.strokeStyle = '#3f4947'; g.strokeRect(.6, TH + .6, W - 1.2, H - TH - 1.2);
+  const name = `shift_${S.y}_${String(S.m).padStart(2, '0')}.png`, url = cv.toDataURL('image/png');
+  S.dlg = { type: 'img', url }; render();
+  try {
+    const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+    const dl = window.claude && window.claude.use ? await Promise.race([window.claude.use('downloads'), new Promise(r => setTimeout(() => r(null), 1500))]) : null;
+    if (dl) await dl.save({ filename: name, data: blob });
+    else { const a = document.createElement('a'); a.download = name; a.href = url; document.body.appendChild(a); a.click(); a.remove(); }
+  } catch (e) { }
+}
+document.addEventListener('change', e => { const el = e.target.closest('[data-k]'); if (el) onChange(el); });
+document.addEventListener('click', e => {
+  if (e.target.classList && e.target.classList.contains('scrim')) { if (S.dlg && S.dlg.type !== 'short') { S.dlg = null; render(); } return; }
+  const el = e.target.closest('[data-a]'); if (el && !el.disabled) onClick(el);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (S.dlg && S.dlg.type !== 'short') { S.dlg = null; render(); } else if (S.pick) { S.pick = null; render(); } }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('td.cell')) { e.preventDefault(); onClick(e.target); }
+});
+document.addEventListener('toggle', e => { const d = e.target; if (d.tagName === 'DETAILS' && d.dataset.id) { const emp = S.cfg.emps.find(x => x.id === d.dataset.id); if (emp) emp._open = d.open; } }, true);
+window.addEventListener('hashchange', () => { const t = location.hash.slice(1); if (TABS.some(x => x[0] === t) && t !== S.tab) setTab(t); });
+(function init() { const t = location.hash.slice(1); if (TABS.some(x => x[0] === t)) S.tab = t; loadMon(); S.saved = store.set('config', S.cfg); render(); })();
+
+</script>
+</body>
+</html>
