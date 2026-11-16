@@ -127,6 +127,9 @@ td.hint{color:var(--outline);font-weight:400;font-size:11px}
 td.num.low{background:var(--error-c);color:var(--on-error-c);font-weight:700}
 td input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary);vertical-align:middle}
 td input.bud{width:72px;height:26px;border:1px solid var(--outline-v);border-radius:4px;background:transparent;text-align:right;padding:0 6px;font-size:12px}
+td input.memo{width:150px;height:26px;border:0;border-bottom:1px solid var(--outline-v);background:transparent;padding:0 4px;font-size:12px;color:var(--on-surface);margin-left:6px}
+td input.memo:focus{outline:0;border-bottom:2px solid var(--primary)}
+td span.muted:empty+input.memo{margin-left:0}
 tr.sum td{background:var(--sc-low);font-size:12px}
 tr.sum td.ng{color:var(--error);font-weight:700}
 .legend{display:flex;flex-wrap:wrap;gap:6px}
@@ -901,7 +904,7 @@ function defMon(y, m) {
     if (H[m + '-' + d]) hol[d] = true;
     if (S.cfg.nouDows.includes(new Date(y, m - 1, d).getDay())) nou[d] = true;
   }
-  return { hol, kan: {}, nou, ev: {}, busy: {}, short: {}, taskEx: {}, budget: {}, pre: {}, kType: Object.assign({}, S.cfg.lastKokyuu), kInd: {}, result: null, seed: 0 };
+  return { hol, kan: {}, nou, ev: {}, busy: {}, short: {}, taskEx: {}, memo: {}, budget: {}, pre: {}, kType: Object.assign({}, S.cfg.lastKokyuu), kInd: {}, result: null, seed: 0 };
 }
 function loadMon() { S.mon = Object.assign(defMon(S.y, S.m), store.get(mkey(S.y, S.m), {})); S.pick = null; }
 function save() { const a = store.set('config', S.cfg), b = store.set(mkey(S.y, S.m), S.mon); S.saved = a && b; }
@@ -1015,7 +1018,7 @@ function pageStaff() {
   }).join('')}
 </section>
 <section class="card"><div class="row c"><h2 style="margin:0">定例業務（できる人を出勤させる）</h2><span style="flex:1"></span><button class="btn fill" data-a="addtask">業務を追加</button></div>
- <p class="muted">発注や備品の注文など、決まった曜日に担当できる人が必要な業務を登録します。その曜日に、できる人が1人以上店頭にいるように休みを組みます。組めなかった日は確認結果に出します。隔週の業務は、実施する日を1つ入れると、その週から1週おきの週だけが対象になります（月をまたいでも続きます）。年末年始や連休で日程が変わる月は、「事前登録」のページでその月だけ実施日を変えられます。</p>
+ <p class="muted">発注や備品の注文など、決まった曜日に担当できる人が必要な業務を登録します。その曜日に、できる人が1人以上店頭にいるように休みを組みます。組めなかった日は確認結果に出します。業務名はシフト表の備考欄に自動で出ます。できる人を選ばなければ、出勤の条件はかけずに備考にだけ出します（ウィークリーなど）。隔週の業務は、実施する日を1つ入れると、その週から1週おきの週だけが対象になります（月をまたいでも続きます）。年末年始や連休で日程が変わる月は、「事前登録」のページでその月だけ実施日を変えられます。</p>
  ${c.tasks.length ? c.tasks.map(t => `<div class="staff"><div class="row">
    ${fld('業務名', txt('tk-' + t.id + '-n', 'task.' + t.id + '.name', t.name, 'w-m', '例：発注'))}
    ${fld('頻度', sel('tk-' + t.id + '-f', 'task.' + t.id + '.freq', t.freq || 'w', [['w', '毎週'], ['bi', '隔週']]))}
@@ -1064,15 +1067,16 @@ function pageToroku() {
       return `<td class="cell ${p ? 'k-' + p : 'hint'} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="pre" data-id="${e.id}" data-d="${d}">${p ? lab(p, d) : hint}</td>`;
     }).join('')}
     ${ck('hol')}${ck('kan')}${ck('short')}${ck('busy')}${ck('nou')}${ck('ev')}
-    <td class="${dowCls(I)}"><input class="bud" id="t-b${d}" type="number" inputmode="numeric" min="0" data-k="budget.${d}" value="${esc(mon.budget[d] ?? '')}" aria-label="${d}日の予算"></td></tr>`;
+    <td class="${dowCls(I)}"><input class="bud" id="t-b${d}" type="number" inputmode="numeric" min="0" data-k="budget.${d}" value="${esc(mon.budget[d] ?? '')}" aria-label="${d}日の予算"></td>
+    <td class="l"><input class="memo" id="t-m${d}" type="text" data-k="memo.${d}" value="${esc(mon.memo[d] ?? '')}" aria-label="${d}日のメモ"></td></tr>`;
   }
   return `
 <section class="card out"><h2>${S.y}年${S.m}月の事前登録</h2>
- <p class="muted">マスを押すと、希望休・有休・半休・出張・研修・他店ヘルプ・必須出勤・番の指定を選べます。祝日・休館・短縮・繁忙期・納品・イベント・予算は表の右側にあります（スマホでは横にスライド）。予算は入れた日だけ使います（単位は自由）。「責」は責任者の出勤日、「担」は定例業務の曜日です。「短縮」は短縮営業日です。</p>
+ <p class="muted">マスを押すと、希望休・有休・半休・出張・研修・他店ヘルプ・必須出勤・番の指定を選べます。祝日・休館・短縮・繁忙期・納品・イベント・予算・メモは表の右側にあります（スマホでは横にスライド）。メモはシフト表の備考欄にそのまま出ます。予算は入れた日だけ使います（単位は自由）。「責」は責任者の出勤日、「担」は定例業務の曜日です。「短縮」は短縮営業日です。</p>
  <div class="row"><label class="fld">繁忙期の開始日<input id="bz-from" class="w-s" type="number" inputmode="numeric" min="1" max="${days}" placeholder="日"></label><label class="fld">終了日<input id="bz-to" class="w-s" type="number" inputmode="numeric" min="1" max="${days}" placeholder="日"></label>
   <button class="btn tonal" data-a="busyset" data-v="1">この期間を繁忙期にする</button><button class="btn text" data-a="busyset" data-v="0">この期間を解除</button>
   <span class="muted" style="align-self:center">繁忙期：${Object.keys(mon.busy).filter(d => mon.busy[d] && +d <= days).length}日（${c.busyStaff}名を目標に配置）</span></div>
- <div class="tw"><table><thead><tr><th class="dt">日</th><th class="dw">曜</th>${c.emps.map(e => `<th>${esc(e.name)}</th>`).join('')}<th>祝</th><th>休館</th><th>短縮</th><th>繁忙期</th><th>納品</th><th>ｲﾍﾞﾝﾄ</th><th>予算</th></tr></thead><tbody>${rows}</tbody></table></div>
+ <div class="tw"><table><thead><tr><th class="dt">日</th><th class="dw">曜</th>${c.emps.map(e => `<th>${esc(e.name)}</th>`).join('')}<th>祝</th><th>休館</th><th>短縮</th><th>繁忙期</th><th>納品</th><th>ｲﾍﾞﾝﾄ</th><th>予算</th><th class="l">メモ</th></tr></thead><tbody>${rows}</tbody></table></div>
  <div class="row c"><button class="btn fill" data-a="gototab" data-tab="shift">シフト表へ進む</button></div>
 </section>
 ${c.tasks.filter(t => t.dows.length).length ? `<section class="card"><h2>定例業務の日程変更（${S.m}月だけ）</h2>
@@ -1106,7 +1110,7 @@ function pageShift() {
       return `<td class="cell ${v ? 'k-' + v : ''} ${chk.bad.has(e.id + '-' + d) ? 'bad' : ''} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="res" data-id="${e.id}" data-d="${d}">${v ? lab(v, d) : ''}</td>`;
     }).join('')}
     ${help.map((col, j) => { const v = col[d], selc = S.pick && S.pick.mode === 'help' && S.pick.id === j && S.pick.d === d; return `<td class="cell ${isShift(v) ? 'k-' + v : ''} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="help" data-id="${j}" data-d="${d}">${isShift(v) ? lab(v, d) : ''}</td>`; }).join('')}
-    <td class="num ${!I.kan && n < c.minStaff ? 'low' : ''}">${I.kan ? '-' : n}</td>${Object.keys(mon.budget).some(k => mon.budget[k]) ? `<td class="${dowCls(I)}">${I.budget ? I.budget.toLocaleString() : ''}</td>` : ''}<td class="l muted">${esc(memo)}</td></tr>`;
+    <td class="num ${!I.kan && n < c.minStaff ? 'low' : ''}">${I.kan ? '-' : n}</td>${Object.keys(mon.budget).some(k => mon.budget[k]) ? `<td class="${dowCls(I)}">${I.budget ? I.budget.toLocaleString() : ''}</td>` : ''}<td class="l"><span class="muted">${esc(memo)}</span><input class="memo" id="r-m${d}" type="text" data-k="memo.${d}" value="${esc(mon.memo[d] ?? '')}" placeholder="メモ" aria-label="${d}日のメモ"></td></tr>`;
   }
   const hasB = Object.keys(mon.budget).some(k => mon.budget[k]);
   const sumRows = [['公休', (s, e) => s.kokyuu, (s, e) => s.kokyuu !== cx.kokyuu[e.id]], ['うち希望休', s => s.kb], ['有休', s => s.y], ['出勤日数', s => s.work], ['土日祝の出勤', s => s.weekend],
@@ -1296,6 +1300,7 @@ function onChange(el) {
   else if (p[0] === 'empbud') { const e = c.emps.find(x => x.id === p[1]); e.buddies = e.buddies.filter(x => x !== p[2]); if (v) e.buddies.push(p[2]); }
   else if (p[0] === 'empallow') { c.emps.find(x => x.id === p[1]).allow[p[2]] = v; }
   else if (p[0] === 'flag') { if (v) mon[p[1]][p[2]] = true; else delete mon[p[1]][p[2]]; }
+  else if (p[0] === 'memo') { const t = el.value.trim(); if (t) mon.memo[p[1]] = t; else delete mon.memo[p[1]]; }
   else if (p[0] === 'budget') { if (el.value === '') delete mon.budget[p[1]]; else mon.budget[p[1]] = Math.max(0, +el.value || 0); }
   else if (p[0] === 'ktype') { const ty = c.types[+p[1]]; mon.kType[ty] = v; c.lastKokyuu[ty] = v; }
   else if (p[0] === 'kind') { if (el.value === '') delete mon.kInd[p[1]]; else mon.kInd[p[1]] = v = Math.max(0, Math.round(+el.value || 0)); }
@@ -1374,7 +1379,7 @@ function onClick(el) {
 async function exportPng() {
   const c = S.cfg, mon = S.mon, res = mon.result, cx = ctx(), chk = checkResult(cx, res), days = cx.days, info = cx.info, help = res.help || [];
   const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
-  const cols = c.emps.length + help.length, W0 = 44, W1 = 34, CW = 76, WN = 48, WM = 190, RH = 30, HH = 46, TH = 78, SR = 3;
+  const cols = c.emps.length + help.length, W0 = 44, W1 = 34, CW = 76, WN = 48, WM = 260, RH = 30, HH = 46, TH = 78, SR = 3;
   const W = W0 + W1 + CW * cols + WN + WM, H = TH + HH + RH * (days + SR) + 2, cv = document.createElement('canvas'), sc = 2;
   cv.width = W * sc; cv.height = H * sc;
   const g = cv.getContext('2d'); g.scale(sc, sc); g.textBaseline = 'middle';
@@ -1402,7 +1407,7 @@ async function exportPng() {
     help.forEach((h, j) => draw(isShift(h[d]) ? h[d] : null, x0 + CW * (c.emps.length + j)));
     g.fillStyle = '#161d1b'; g.font = F(400, 12); g.fillText(I.kan ? '-' : String(chk.dayCount[d]), xn + WN / 2, y + RH / 2);
     g.textAlign = 'left'; g.fillStyle = '#3f4947'; g.font = F(400, 11);
-    g.fillText([I.hol ? '祝日' : '', I.kan ? '休館日' : '', I.busy ? '繁忙期' : '', mon.short[d] ? '短縮営業' : '', I.nou ? '納品' : '', I.ev ? 'イベント' : ''].concat(I.kan ? [] : c.tasks.filter(t => t.name && taskShown(t, S.y, S.m, d, I.dow, mon.taskEx[t.id])).map(t => t.name)).filter(Boolean).join('・'), xm + 8, y + RH / 2, WM - 12);
+    g.fillText([I.hol ? '祝日' : '', I.kan ? '休館日' : '', I.busy ? '繁忙期' : '', mon.short[d] ? '短縮営業' : '', I.nou ? '納品' : '', I.ev ? 'イベント' : ''].concat(I.kan ? [] : c.tasks.filter(t => t.name && taskShown(t, S.y, S.m, d, I.dow, mon.taskEx[t.id])).map(t => t.name)).concat(mon.memo[d] || '').filter(Boolean).join('・'), xm + 8, y + RH / 2, WM - 12);
   }
   const ys = y0 + HH + RH * days;
   g.fillStyle = '#f8f3ea'; g.fillRect(0, ys, W, RH * SR);
