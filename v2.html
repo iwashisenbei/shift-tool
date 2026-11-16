@@ -104,12 +104,16 @@ tr:last-child td{border-bottom:0}
 thead th{background:var(--sc);font-weight:500;font-size:12px;height:40px;position:sticky;top:0}
 th small{display:block;font-weight:400;font-size:10px;color:var(--on-surface-v)}
 td.l,th.l{text-align:left}
+/* 日付と曜日は横スライドしても左に固定 */
+.dt,.dw{position:sticky;z-index:2;background:var(--surface)}
+.dt{left:0;min-width:36px;width:36px}.dw{left:36px;min-width:30px;width:30px;box-shadow:1px 0 0 var(--outline-v)}
+thead th.dt,thead th.dw{z-index:3;background:var(--sc)}
 tr.pri td.dt,tr.pri td.dw{background:var(--row-pri)}
 tr.sat6 td.dt,tr.sat6 td.dw{background:var(--row-sat)}
 tr.bz td.dt{box-shadow:inset 4px 0 0 var(--row-busy)}
 td.sun input.bud,td.sat input.bud{color:inherit}
 .sun{color:var(--sun)}.sat{color:var(--sat)}
-td.cell{cursor:pointer;min-width:52px;font-weight:500;user-select:none}
+td.cell{cursor:pointer;min-width:48px;font-weight:500;user-select:none}
 td.cell:hover{box-shadow:inset 0 0 0 2px var(--outline)}
 td.cell.sel{box-shadow:inset 0 0 0 2px var(--primary)}
 td.cell.bad{box-shadow:inset 0 0 0 2px var(--error)}
@@ -156,7 +160,7 @@ tr.sum td.ng{color:var(--error);font-weight:700}
 .spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--outline-v);border-top-color:var(--primary);animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}.sw input,.sw input::after{transition:none}}
-@media (max-width:600px){main{padding:12px 12px 140px}.card{padding:12px}.btn{padding:0 16px}h1{font-size:18px}}
+@media (max-width:600px){th,td{padding:0 4px}td.cell{min-width:44px}main{padding:12px 12px 140px}.card{padding:12px}.btn{padding:0 16px}h1{font-size:18px}}
 
 </style>
 </head>
@@ -981,22 +985,23 @@ function pageToroku() {
   let rows = '';
   for (let d = 1; d <= days; d++) {
     const I = info[d], ck = (f) => `<td><input type="checkbox" id="t-${f}${d}" data-k="flag.${f}.${d}" data-t="bool" ${mon[f][d] ? 'checked' : ''} aria-label="${d}日"></td>`;
-    rows += `<tr class="${rowCls(I)}"><td class="dt ${dowCls(I)}"><b>${d}</b></td><td class="dw ${dowCls(I)}">${DOW[I.dow]}</td>${ck('hol')}${ck('kan')}${ck('short')}${ck('busy')}${ck('nou')}${ck('ev')}
-    <td class="${dowCls(I)}"><input class="bud" id="t-b${d}" type="number" inputmode="numeric" min="0" data-k="budget.${d}" value="${esc(mon.budget[d] ?? '')}" aria-label="${d}日の予算"></td>
+    rows += `<tr class="${rowCls(I)}"><td class="dt ${dowCls(I)}"><b>${d}</b></td><td class="dw ${dowCls(I)}">${DOW[I.dow]}</td>
     ${c.emps.map(e => {
       const p = I.kan ? 'KAN' : mon.pre[e.id + '-' + d], selc = S.pick && S.pick.mode === 'pre' && S.pick.id === e.id && S.pick.d === d;
       let hint = '';
       if (!p) { if (cd === d && e.role === 'chief') hint = '責'; else if (c.tasks.some(t => t.members.includes(e.id) && ((mon.taskEx[t.id]?.add || {})[d] || (taskOn(t, S.y, S.m, d, I.dow) && !(mon.taskEx[t.id]?.skip || {})[d])))) hint = '担'; }
       return `<td class="cell ${p ? 'k-' + p : 'hint'} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="pre" data-id="${e.id}" data-d="${d}">${p ? lab(p, d) : hint}</td>`;
-    }).join('')}</tr>`;
+    }).join('')}
+    ${ck('hol')}${ck('kan')}${ck('short')}${ck('busy')}${ck('nou')}${ck('ev')}
+    <td class="${dowCls(I)}"><input class="bud" id="t-b${d}" type="number" inputmode="numeric" min="0" data-k="budget.${d}" value="${esc(mon.budget[d] ?? '')}" aria-label="${d}日の予算"></td></tr>`;
   }
   return `
 <section class="card out"><h2>${S.y}年${S.m}月の事前登録</h2>
- <p class="muted">マスを押すと、希望休・有休・半休・出張・研修・他店ヘルプ・必須出勤・番の指定を選べます。予算は入れた日だけ使います（単位は自由）。「責」は責任者の出勤日、「担」は定例業務の曜日です。「短縮」は短縮営業日です。</p>
+ <p class="muted">マスを押すと、希望休・有休・半休・出張・研修・他店ヘルプ・必須出勤・番の指定を選べます。祝日・休館・短縮・繁忙期・納品・イベント・予算は表の右側にあります（スマホでは横にスライド）。予算は入れた日だけ使います（単位は自由）。「責」は責任者の出勤日、「担」は定例業務の曜日です。「短縮」は短縮営業日です。</p>
  <div class="row"><label class="fld">繁忙期の開始日<input id="bz-from" class="w-s" type="number" inputmode="numeric" min="1" max="${days}" placeholder="日"></label><label class="fld">終了日<input id="bz-to" class="w-s" type="number" inputmode="numeric" min="1" max="${days}" placeholder="日"></label>
   <button class="btn tonal" data-a="busyset" data-v="1">この期間を繁忙期にする</button><button class="btn text" data-a="busyset" data-v="0">この期間を解除</button>
   <span class="muted" style="align-self:center">繁忙期：${Object.keys(mon.busy).filter(d => mon.busy[d] && +d <= days).length}日（${c.busyStaff}名を目標に配置）</span></div>
- <div class="tw"><table><thead><tr><th>日</th><th>曜</th><th>祝</th><th>休館</th><th>短縮</th><th>繁忙期</th><th>納品</th><th>ｲﾍﾞﾝﾄ</th><th>予算</th>${c.emps.map(e => `<th>${esc(e.name)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+ <div class="tw"><table><thead><tr><th class="dt">日</th><th class="dw">曜</th>${c.emps.map(e => `<th>${esc(e.name)}</th>`).join('')}<th>祝</th><th>休館</th><th>短縮</th><th>繁忙期</th><th>納品</th><th>ｲﾍﾞﾝﾄ</th><th>予算</th></tr></thead><tbody>${rows}</tbody></table></div>
  <div class="row c"><button class="btn fill" data-a="gototab" data-tab="shift">シフト表へ進む</button></div>
 </section>
 ${c.tasks.filter(t => t.dows.length).length ? `<section class="card"><h2>定例業務の日程変更（${S.m}月だけ）</h2>
@@ -1039,7 +1044,7 @@ function pageShift() {
   const R = chk.rules, rl = [['労働時間の上限', c.monthHoursMax ? R[0] : null], ['公休日数', R[1]], ['事前登録を動かさない', R[2]], ['勤務制限', R[3]], ['開店・閉店の要員', R[4]], ['条件の衝突は報告', true]];
   return head + `
 <section class="card out">
- <div class="tw"><table><thead><tr><th>日</th><th>曜</th>${c.emps.map(e => `<th>${esc(e.name)}${e.role === 'chief' || e.newbie ? `<small>${[e.role === 'chief' ? '責任者' : '', e.newbie ? '新人' : ''].filter(Boolean).join('・')}</small>` : ''}</th>`).join('')}${help.map((x, j) => `<th>ヘルプ${help.length > 1 ? j + 1 : ''}<small>要請</small></th>`).join('')}<th>人数</th>${hasB ? '<th>予算</th>' : ''}<th class="l">備考</th></tr></thead>
+ <div class="tw"><table><thead><tr><th class="dt">日</th><th class="dw">曜</th>${c.emps.map(e => `<th>${esc(e.name)}${e.role === 'chief' || e.newbie ? `<small>${[e.role === 'chief' ? '責任者' : '', e.newbie ? '新人' : ''].filter(Boolean).join('・')}</small>` : ''}</th>`).join('')}${help.map((x, j) => `<th>ヘルプ${help.length > 1 ? j + 1 : ''}<small>要請</small></th>`).join('')}<th>人数</th>${hasB ? '<th>予算</th>' : ''}<th class="l">備考</th></tr></thead>
  <tbody>${rows}${sumRows}</tbody></table></div>
  <div class="legend">${['E', 'M', 'L', 'F'].map(k => `<span class="k-${k}">${esc(lab(k))}＝${LONG[k]} ${esc(c.shiftDefs[k].time)}</span>`).join('')}${['K', 'KB', 'Y', 'HA', 'HP', 'S', 'T', 'O', 'KAN'].map(k => `<span class="k-${k}">${SHORT[k]}＝${LONG[k]}</span>`).join('')}</div>
  ${Object.keys(mon.short).some(d => mon.short[d]) ? `<div class="legend"><span>短縮営業日</span>${['E', 'M', 'L', 'F'].filter(k => c.shortDefs[k].time || k !== 'F').map(k => `<span>${esc(c.shortDefs[k].label)}＝${LONG[k]} ${esc(c.shortDefs[k].time)}</span>`).join('')}</div>` : ''}
