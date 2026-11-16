@@ -297,13 +297,10 @@ function jpHolidays(y) {
 function buildDayInfo(y, m, mon) {
   const days = new Date(y, m, 0).getDate();
   const info = [null];
-  let maxB = 0;
-  for (let d = 1; d <= days; d++) maxB = Math.max(maxB, +mon.budget?.[d] || 0);
   for (let d = 1; d <= days; d++) {
     const dow = new Date(y, m - 1, d).getDay();
     const hol = !!mon.hol?.[d];
-    const b = +mon.budget?.[d] || 0;
-    info.push({ d, dow, hol, kan: !!mon.kan?.[d], nou: !!mon.nou?.[d], ev: !!mon.ev?.[d], busy: !!mon.busy?.[d], budget: b, bn: maxB ? b / maxB : 0, pri: dow === 0 || dow === 6 || hol });
+    info.push({ d, dow, hol, kan: !!mon.kan?.[d], nou: !!mon.nou?.[d], ev: !!mon.ev?.[d], busy: !!mon.busy?.[d], budget: 0, bn: 0, pri: dow === 0 || dow === 6 || hol });
   }
   return info;
 }
@@ -940,7 +937,7 @@ function pageKihon() {
   ${fld('1日の上限人数', num('f-max', 'cfg.maxStaff', c.maxStaff, { min: 1 }))}
   ${fld('繁忙期の人数', num('f-busy', 'cfg.busyStaff', c.busyStaff, { min: 1 }))}
  </div>
- <p class="muted">土日祝・納品日・イベント日は、人に余裕があるときに「多めに置く日の人数」まで優先して増やします。足りなければ最低人数のままで作ります。優先順は、繁忙期 → 予算の高い土日祝 → 納品日 → イベント日 → 残りの日の予算が高い順です。繁忙期の日付は「事前登録」のページで指定します。繁忙期の人数が1日の上限より多いときは、繁忙期の日だけその人数まで置きます。</p>
+ <p class="muted">土日祝・納品日・イベント日は、人に余裕があるときに「多めに置く日の人数」まで優先して増やします。足りなければ最低人数のままで作ります。優先順は、繁忙期 → 土日祝 → 納品日 → イベント日です。繁忙期の日付は「事前登録」のページで指定します。繁忙期の人数が1日の上限より多いときは、繁忙期の日だけその人数まで置きます。</p>
  <div class="row c">${sw('f-kan', 'cfg.includeKan', c.includeKan, '休館日を公休に含める')}</div>
  <div><p class="muted" style="margin-bottom:6px">納品の曜日（新しい月の初期値になります）</p>
   <div class="row c"><div class="chips">${DOW.map((w, i) => chip('f-nou' + i, 'noudow.' + i, c.nouDows.includes(i), w)).join('')}</div>
@@ -1067,16 +1064,15 @@ function pageToroku() {
       return `<td class="cell ${p ? 'k-' + p : 'hint'} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="pre" data-id="${e.id}" data-d="${d}">${p ? lab(p, d) : hint}</td>`;
     }).join('')}
     ${ck('hol')}${ck('kan')}${ck('short')}${ck('busy')}${ck('nou')}${ck('ev')}
-    <td class="${dowCls(I)}"><input class="bud" id="t-b${d}" type="number" inputmode="numeric" min="0" data-k="budget.${d}" value="${esc(mon.budget[d] ?? '')}" aria-label="${d}日の予算"></td>
     <td class="l"><input class="memo" id="t-m${d}" type="text" data-k="memo.${d}" value="${esc(mon.memo[d] ?? '')}" aria-label="${d}日のメモ"></td></tr>`;
   }
   return `
 <section class="card out"><h2>${S.y}年${S.m}月の事前登録</h2>
- <p class="muted">マスを押すと、希望休・有休・半休・出張・研修・他店ヘルプ・必須出勤・番の指定を選べます。祝日・休館・短縮・繁忙期・納品・イベント・予算・メモは表の右側にあります（スマホでは横にスライド）。メモはシフト表の備考欄にそのまま出ます。予算は入れた日だけ使います（単位は自由）。「責」は責任者の出勤日、「担」は定例業務の曜日です。「短縮」は短縮営業日です。</p>
+ <p class="muted">マスを押すと、希望休・有休・半休・出張・研修・他店ヘルプ・必須出勤・番の指定を選べます。祝日・休館・短縮・繁忙期・納品・イベント・メモは表の右側にあります（スマホでは横にスライド）。メモはシフト表の備考欄にそのまま出ます。「責」は責任者の出勤日、「担」は定例業務の曜日です。「短縮」は短縮営業日です。</p>
  <div class="row"><label class="fld">繁忙期の開始日<input id="bz-from" class="w-s" type="number" inputmode="numeric" min="1" max="${days}" placeholder="日"></label><label class="fld">終了日<input id="bz-to" class="w-s" type="number" inputmode="numeric" min="1" max="${days}" placeholder="日"></label>
   <button class="btn tonal" data-a="busyset" data-v="1">この期間を繁忙期にする</button><button class="btn text" data-a="busyset" data-v="0">この期間を解除</button>
   <span class="muted" style="align-self:center">繁忙期：${Object.keys(mon.busy).filter(d => mon.busy[d] && +d <= days).length}日（${c.busyStaff}名を目標に配置）</span></div>
- <div class="tw"><table><thead><tr><th class="dt">日</th><th class="dw">曜</th>${c.emps.map(e => `<th>${esc(e.name)}</th>`).join('')}<th>祝</th><th>休館</th><th>短縮</th><th>繁忙期</th><th>納品</th><th>ｲﾍﾞﾝﾄ</th><th>予算</th><th class="l">メモ</th></tr></thead><tbody>${rows}</tbody></table></div>
+ <div class="tw"><table><thead><tr><th class="dt">日</th><th class="dw">曜</th>${c.emps.map(e => `<th>${esc(e.name)}</th>`).join('')}<th>祝</th><th>休館</th><th>短縮</th><th>繁忙期</th><th>納品</th><th>ｲﾍﾞﾝﾄ</th><th class="l">メモ</th></tr></thead><tbody>${rows}</tbody></table></div>
  <div class="row c"><button class="btn fill" data-a="gototab" data-tab="shift">シフト表へ進む</button></div>
 </section>
 ${c.tasks.filter(t => t.dows.length).length ? `<section class="card"><h2>定例業務の日程変更（${S.m}月だけ）</h2>
@@ -1110,16 +1106,16 @@ function pageShift() {
       return `<td class="cell ${v ? 'k-' + v : ''} ${chk.bad.has(e.id + '-' + d) ? 'bad' : ''} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="res" data-id="${e.id}" data-d="${d}">${v ? lab(v, d) : ''}</td>`;
     }).join('')}
     ${help.map((col, j) => { const v = col[d], selc = S.pick && S.pick.mode === 'help' && S.pick.id === j && S.pick.d === d; return `<td class="cell ${isShift(v) ? 'k-' + v : ''} ${selc ? 'sel' : ''}" tabindex="0" data-a="pick" data-mode="help" data-id="${j}" data-d="${d}">${isShift(v) ? lab(v, d) : ''}</td>`; }).join('')}
-    <td class="num ${!I.kan && n < c.minStaff ? 'low' : ''}">${I.kan ? '-' : n}</td>${Object.keys(mon.budget).some(k => mon.budget[k]) ? `<td class="${dowCls(I)}">${I.budget ? I.budget.toLocaleString() : ''}</td>` : ''}<td class="l"><span class="muted">${esc(memo)}</span><input class="memo" id="r-m${d}" type="text" data-k="memo.${d}" value="${esc(mon.memo[d] ?? '')}" placeholder="メモ" aria-label="${d}日のメモ"></td></tr>`;
+    <td class="num ${!I.kan && n < c.minStaff ? 'low' : ''}">${I.kan ? '-' : n}</td><td class="l"><span class="muted">${esc(memo)}</span><input class="memo" id="r-m${d}" type="text" data-k="memo.${d}" value="${esc(mon.memo[d] ?? '')}" placeholder="メモ" aria-label="${d}日のメモ"></td></tr>`;
   }
-  const hasB = Object.keys(mon.budget).some(k => mon.budget[k]);
+  const hasB = false;
   const sumRows = [['公休', (s, e) => s.kokyuu, (s, e) => s.kokyuu !== cx.kokyuu[e.id]], ['うち希望休', s => s.kb], ['有休', s => s.y], ['出勤日数', s => s.work], ['土日祝の出勤', s => s.weekend],
   [LONG.E, s => s.E], [LONG.M, s => s.M], [LONG.L, s => s.L], ['最長連勤', s => s.max, s => s.max > c.streakLimit + (c.allowPlus1 ? 1 : 0)]]
     .map(([n, f, ng]) => `<tr class="sum"><td colspan="2" class="l">${n}</td>${c.emps.map((e, i) => `<td class="${ng && ng(chk.stats[i], e) ? 'ng' : ''}">${f(chk.stats[i], e)}</td>`).join('')}${help.map(() => '<td></td>').join('')}<td colspan="${hasB ? 3 : 2}" class="l muted">${n === '公休' ? '平均 ' + chk.avg.toFixed(1) + '名／日' : ''}</td></tr>`).join('');
   const R = chk.rules, rl = [['労働時間の上限', c.monthHoursMax ? R[0] : null], ['公休日数', R[1]], ['事前登録を動かさない', R[2]], ['勤務制限', R[3]], ['開店・閉店の要員', R[4]], ['条件の衝突は報告', true]];
   return head + `
 <section class="card out">
- <div class="tw"><table><thead><tr><th class="dt">日</th><th class="dw">曜</th>${c.emps.map(e => `<th>${esc(e.name)}${e.role === 'chief' || e.newbie ? `<small>${[e.role === 'chief' ? '責任者' : '', e.newbie ? '新人' : ''].filter(Boolean).join('・')}</small>` : ''}</th>`).join('')}${help.map((x, j) => `<th>ヘルプ${help.length > 1 ? j + 1 : ''}<small>要請</small></th>`).join('')}<th>人数</th>${hasB ? '<th>予算</th>' : ''}<th class="l">備考</th></tr></thead>
+ <div class="tw"><table><thead><tr><th class="dt">日</th><th class="dw">曜</th>${c.emps.map(e => `<th>${esc(e.name)}${e.role === 'chief' || e.newbie ? `<small>${[e.role === 'chief' ? '責任者' : '', e.newbie ? '新人' : ''].filter(Boolean).join('・')}</small>` : ''}</th>`).join('')}${help.map((x, j) => `<th>ヘルプ${help.length > 1 ? j + 1 : ''}<small>要請</small></th>`).join('')}<th>人数</th><th class="l">備考</th></tr></thead>
  <tbody>${rows}${sumRows}</tbody></table></div>
  <div class="legend">${['E', 'M', 'L', 'F'].map(k => `<span class="k-${k}">${esc(lab(k))}＝${LONG[k]} ${esc(c.shiftDefs[k].time)}</span>`).join('')}${['K', 'KB', 'Y', 'HA', 'HP', 'S', 'T', 'O', 'KAN'].map(k => `<span class="k-${k}">${SHORT[k]}＝${LONG[k]}</span>`).join('')}</div>
  ${Object.keys(mon.short).some(d => mon.short[d]) ? `<div class="legend"><span>短縮営業日</span>${['E', 'M', 'L', 'F'].filter(k => c.shortDefs[k].time || k !== 'F').map(k => `<span>${esc(c.shortDefs[k].label)}＝${LONG[k]} ${esc(c.shortDefs[k].time)}</span>`).join('')}</div>` : ''}
