@@ -820,7 +820,8 @@ function loadCfg0() {
   return d;
 }
 const now = new Date();
-const S = { cfg: loadCfg(), y: now.getFullYear(), m: now.getMonth() + 1, mon: null, tab: 'kihon', pick: null, dlg: null, busy: false, saved: true };
+const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);   // シフトは前月に作るので、開いたときは翌月を表示
+const S = { cfg: loadCfg(), y: next.getFullYear(), m: next.getMonth() + 1, mon: null, tab: 'kihon', pick: null, dlg: null, busy: false, saved: true };
 const TABS = [['kihon', '基本設定'], ['staff', 'スタッフ'], ['kokyu', '公休設定'], ['toroku', '事前登録'], ['shift', 'シフト表']];
 const mkey = (y, m) => 'm:' + y + '-' + m;
 const daysOf = () => new Date(S.y, S.m, 0).getDate();
