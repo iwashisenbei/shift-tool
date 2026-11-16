@@ -15,7 +15,7 @@
   --on-surface:#1d1b16;--on-surface-v:#4b4739;--outline:#7d7767;--outline-v:#cec6b4;
   --error:#ba1a1a;--error-c:#ffdad6;--on-error-c:#410002;--warn-c:#ffe9b8;--on-warn-c:#3a2a00;--ok-c:#dbe4d3;--on-ok-c:#141e10;
   --sun:#c00000;--sat:#1f4fbf;
-  --c-shift:#fff;--c-rest:#dbe4d3;--c-kb-t:#c00000;--c-KAN:#8f8ca0;--c-KAN-t:#fff;--row-pri:#f4dcdc;--row-sat:#f3e6d3;--row-busy:#b3261e;
+  --c-shift:#fff;--c-rest:#dbe4d3;--c-kb-t:#c00000;--c-KAN:#8f8ca0;--c-KAN-t:#fff;--row-pri:#f4dcdc;--row-sat:#f3e6d3;--row-busy:#b3261e;--cf0:#c98b2b;--cf1:#7fa06a;--cf2:#c05a6a;--cf3:#5c7fb8;--m-page:#fffdf8;--m-ink:#3a3327;--m-cheek:#f2b3a8;
   --font:"Roboto","Noto Sans JP",system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;
   color-scheme:light;
 }
@@ -26,7 +26,7 @@
   --on-surface:#e8e2d8;--on-surface-v:#cec6b4;--outline:#979080;--outline-v:#4b4739;
   --error:#ffb4ab;--error-c:#93000a;--on-error-c:#ffdad6;--warn-c:#574400;--on-warn-c:#ffe9b8;--ok-c:#3c4a36;--on-ok-c:#dbe4d3;
   --sun:#ff8a80;--sat:#a8c8ff;
-  --c-shift:#1d1b16;--c-rest:#3c4a36;--c-kb-t:#ff8a80;--c-KAN:#56546a;--c-KAN-t:#fff;--row-pri:#3d2525;--row-sat:#3a301f;--row-busy:#ff8a80;
+  --c-shift:#1d1b16;--c-rest:#3c4a36;--c-kb-t:#ff8a80;--c-KAN:#56546a;--c-KAN-t:#fff;--row-pri:#3d2525;--row-sat:#3a301f;--row-busy:#ff8a80;--cf0:#e3b566;--cf1:#a9c795;--cf2:#e58e9b;--cf3:#9db8e6;--m-page:#f3ecdf;--m-ink:#2a251c;--m-cheek:#e79a8e;
   color-scheme:dark;}}
 :root[data-theme="dark"]{
   --primary:#d7c5a0;--on-primary:#3a2f15;--primary-c:#51462a;--on-primary-c:#f3e1bb;
@@ -35,7 +35,7 @@
   --on-surface:#e8e2d8;--on-surface-v:#cec6b4;--outline:#979080;--outline-v:#4b4739;
   --error:#ffb4ab;--error-c:#93000a;--on-error-c:#ffdad6;--warn-c:#574400;--on-warn-c:#ffe9b8;--ok-c:#3c4a36;--on-ok-c:#dbe4d3;
   --sun:#ff8a80;--sat:#a8c8ff;
-  --c-shift:#1d1b16;--c-rest:#3c4a36;--c-kb-t:#ff8a80;--c-KAN:#56546a;--c-KAN-t:#fff;--row-pri:#3d2525;--row-sat:#3a301f;--row-busy:#ff8a80;
+  --c-shift:#1d1b16;--c-rest:#3c4a36;--c-kb-t:#ff8a80;--c-KAN:#56546a;--c-KAN-t:#fff;--row-pri:#3d2525;--row-sat:#3a301f;--row-busy:#ff8a80;--cf0:#e3b566;--cf1:#a9c795;--cf2:#e58e9b;--cf3:#9db8e6;--m-page:#f3ecdf;--m-ink:#2a251c;--m-cheek:#e79a8e;
   color-scheme:dark;}
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -161,6 +161,76 @@ tr.sum td.ng{color:var(--error);font-weight:700}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}.sw input,.sw input::after{transition:none}}
 @media (max-width:600px){th,td{padding:0 4px}td.cell{min-width:44px}main{padding:12px 12px 140px}.card{padding:12px}.btn{padding:0 16px}h1{font-size:18px}}
+
+/* ---------- はじめての案内：白と黒、大きな文字、広い余白。スクロールで1場面ずつ現れる ---------- */
+.gx{--gx-bg:#fbfaf7;--gx-ink:#121210;--gx-sub:#5d5a52;--gx-rule:#d9d5cb;--gx-field:#fff;
+  position:fixed;inset:0;z-index:45;background:var(--gx-bg);color:var(--gx-ink);font-family:var(--font);transition:opacity .5s,transform .5s cubic-bezier(.7,0,.2,1)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .gx{--gx-bg:#0f0f0e;--gx-ink:#f3f1ea;--gx-sub:#a9a59a;--gx-rule:#33312c;--gx-field:#191917}}
+:root[data-theme="dark"] .gx{--gx-bg:#0f0f0e;--gx-ink:#f3f1ea;--gx-sub:#a9a59a;--gx-rule:#33312c;--gx-field:#191917}
+.gx.bye{opacity:0;transform:translateY(-3%)}
+.gx-scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.gx-load{position:absolute;inset:0;z-index:5;background:var(--gx-ink);color:var(--gx-bg);display:flex;align-items:flex-end;justify-content:flex-end;padding:6vw;font-family:"Roboto",sans-serif;font-weight:400;font-size:clamp(64px,18vw,180px);line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;transition:transform .9s cubic-bezier(.7,0,.2,1)}
+.gx-load i{font-style:normal;font-size:.3em;margin:0 0 .35em .15em}
+.gx-load.out{transform:translateY(-101%)}
+.gx-bar{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;align-items:center;gap:16px;padding:18px clamp(20px,5vw,56px);font-family:"Roboto",sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;background:linear-gradient(var(--gx-bg) 55%,transparent)}
+.gx-brand{flex:1;font-weight:500}
+.gx-pct{font-variant-numeric:tabular-nums;color:var(--gx-sub)}.gx-pct b{color:var(--gx-ink);font-weight:500;font-size:14px}
+.gx-skip{border:0;background:none;cursor:pointer;color:var(--gx-ink);font:inherit;letter-spacing:inherit;text-transform:inherit;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:6px 0}
+.gx-skip span{font-family:var(--font);font-size:10px;letter-spacing:.05em;color:var(--gx-sub);text-transform:none}
+.gx-line{position:absolute;left:0;right:0;top:0;height:2px;z-index:4}
+.gx-line i{display:block;height:100%;background:var(--gx-ink);transform-origin:0 50%;transform:scaleX(0);transition:transform .2s linear}
+.gx-sec{min-height:100%;display:flex;align-items:center;padding:96px clamp(20px,5vw,56px) 72px;border-bottom:1px solid var(--gx-rule)}
+.gx-in{width:100%;max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.gx-in>*,.gx-form>*,#gx-staff>*{flex-shrink:0}
+.gx-en{font-family:"Roboto",sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gx-sub);margin:0}
+.gx-catch{font-weight:500;font-size:clamp(26px,6.4vw,64px);line-height:1.5;letter-spacing:.32em;margin:0;text-wrap:balance}
+.gx-catch span{display:inline-block}
+.gx-catch2{font-size:clamp(22px,5.2vw,52px)}
+.gx-sub{font-size:14px;line-height:2;color:var(--gx-sub);max-width:34em;margin:0}
+.gx-big{font-size:clamp(24px,5.5vw,48px);font-weight:500;line-height:1.6;letter-spacing:.12em;margin:0}
+.gx-cue{display:flex;align-items:center;gap:12px;font-family:"Roboto",sans-serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gx-sub);margin-top:24px}
+.gx-cue i{display:block;width:1px;height:56px;background:var(--gx-rule);position:relative;overflow:hidden}
+.gx-cue i::after{content:"";position:absolute;left:0;top:0;width:1px;height:50%;background:var(--gx-ink);animation:gxcue 1.8s cubic-bezier(.7,0,.2,1) infinite}
+@keyframes gxcue{0%{transform:translateY(-100%)}100%{transform:translateY(200%)}}
+.gx-msg .gx-in{gap:40px}
+.gx-msg p{font-size:clamp(17px,3.6vw,26px);line-height:2.1;letter-spacing:.14em;margin:0}
+.gx-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;padding-bottom:16px;border-bottom:1px solid var(--gx-ink)}
+.gx-head h2{font-size:clamp(20px,4vw,30px);font-weight:500;letter-spacing:.12em;margin:0;flex-basis:100%}
+.gx-no{font-family:"Roboto",sans-serif;font-size:clamp(40px,9vw,72px);font-weight:400;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.gx-lead{font-size:15px;line-height:2;margin:0;max-width:34em}
+.gx-cap{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0;border-top:1px solid var(--gx-rule)}
+.gx-card{padding:24px 20px 28px 0;border-bottom:1px solid var(--gx-rule);display:flex;flex-direction:column;gap:10px}
+.gx-card b{font-size:18px;font-weight:500;letter-spacing:.1em}
+.gx-card p{margin:0;font-size:13px;line-height:1.9;color:var(--gx-sub)}
+.gx-form{display:flex;flex-direction:column;gap:16px;padding:24px;background:var(--gx-field);border:1px solid var(--gx-rule)}
+.gx-row{display:flex;flex-wrap:wrap;gap:16px 20px;align-items:flex-end}
+.gx .fld{color:var(--gx-sub);font-size:12px;letter-spacing:.04em}
+.gx .fld input,.gx .fld select{height:44px;border:0;border-bottom:1px solid var(--gx-ink);border-radius:0;padding:0 2px;background:transparent;color:var(--gx-ink);font-size:16px}
+.gx .fld input:focus,.gx .fld select:focus{outline:0;border-bottom-width:2px}
+.gx .ib{color:var(--gx-sub)}
+.gx-emp{display:flex;gap:16px;align-items:flex-end}.gx-emp .fld{flex:1;min-width:0}.gx-emp .fld input,.gx-emp .fld select{width:100%}
+#gx-staff{display:flex;flex-direction:column;gap:14px}
+.gx-note{font-size:12px;color:var(--gx-sub)}
+.gx-why{margin:0;padding:0;list-style:none;font-size:13px;line-height:1.9;color:var(--gx-sub)}
+.gx-why li{padding-left:1.4em;position:relative}.gx-why li::before{content:"—";position:absolute;left:0;color:var(--gx-ink)}
+.gx-link{border:0;background:none;cursor:pointer;color:var(--gx-ink);font-family:var(--font);font-size:14px;letter-spacing:.12em;padding:12px 0;border-bottom:1px solid var(--gx-ink);display:inline-flex;align-items:center;gap:14px}
+.gx-link i{font-style:normal;transition:transform .3s cubic-bezier(.2,0,0,1)}
+.gx-link:hover i{transform:translateX(6px)}
+.gx-link:disabled{opacity:.35;cursor:default}
+.gx-main{font-size:16px;font-weight:500;padding:16px 0}
+.gx-end .gx-row{gap:16px 40px;margin-top:8px}
+.gx-end{border-bottom:0}
+.gx-skip:focus-visible,.gx-link:focus-visible{outline:2px solid var(--gx-ink);outline-offset:4px}
+/* 現れ方（スクリプトが動くときだけ隠してから出す） */
+.gx.anim .rv{opacity:0;transform:translateY(28px);filter:blur(10px);transition:opacity .9s cubic-bezier(.2,0,0,1),transform .9s cubic-bezier(.2,0,0,1),filter .9s cubic-bezier(.2,0,0,1);transition-delay:calc(var(--d,0)*.09s)}
+.gx.anim .rv.shown{opacity:1;transform:none;filter:none}
+.gx.anim .gx-msg .rv{transition-duration:1.2s}
+.gx.anim .cl{clip-path:inset(0 0 100% 0);transition:clip-path 1s cubic-bezier(.7,0,.2,1)}
+.gx.anim .cl.shown{clip-path:inset(0)}
+.gx.anim .gx-catch span{opacity:0;transform:translateY(.6em);filter:blur(6px);transition:opacity .7s cubic-bezier(.2,0,0,1),transform .7s cubic-bezier(.2,0,0,1),filter .7s;transition-delay:calc(var(--i)*.055s + .1s)}
+.gx.anim.ready .gx-catch.shown span{opacity:1;transform:none;filter:none}
+@media (prefers-reduced-motion:reduce){.gx,.gx-load,.gx-line i,.gx-link i{transition:none}.gx-cue i::after{animation:none}.gx-scroll{scroll-behavior:auto}}
+@media (max-width:600px){.gx-sec{padding:88px 20px 56px}.gx-form{padding:18px 16px}.gx-catch{letter-spacing:.2em}.gx-brand{font-size:10px}}
 
 </style>
 </head>
@@ -1058,6 +1128,99 @@ function pageShift() {
  ${chk.errors.length ? '<p class="muted">赤枠のマスが違反箇所です。希望休や人数の条件どうしがぶつかって直せない場合は、ここに残ったものがその組み合わせです。条件は自動では緩めていません。</p>' : ''}
 </section>`;
 }
+
+/* ---------- はじめての案内（全画面・スクロールで進む） ---------- */
+const Intro = {
+  el: null, sig: '',
+  chars: t => [...t].map((ch, i) => ch === '\n' ? '<br>' : `<span style="--i:${i}">${esc(ch)}</span>`).join(''),
+  why: items => `<ul class="gx-why">${items.map(x => `<li>${x}</li>`).join('')}</ul>`,
+  staffHTML() {
+    const c = S.cfg;
+    return c.emps.map(e => `<div class="gx-emp">${fld('名前', txt('x-n' + e.id, 'emp.' + e.id + '.name', e.name))}${fld('雇用区分', sel('x-t' + e.id, 'emp.' + e.id + '.type', e.type, c.types.map(t => [t, t])))}
+      <button class="ib" aria-label="${esc(e.name)}を削除" data-a="delemp" data-id="${e.id}" ${c.emps.length <= 2 ? 'disabled' : ''}>${IC.del}</button></div>`).join('') +
+      `<div class="gx-row"><button class="gx-link" data-a="addemp" ${c.emps.length >= 8 ? 'disabled' : ''}>スタッフを追加 <i>＋</i></button><span class="gx-note">いま${c.emps.length}名</span></div>`;
+  },
+  kokyuHTML() {
+    const c = S.cfg;
+    return c.types.filter(t => c.emps.some(e => e.type === t)).map(t => fld(esc(t), num('x-k' + c.types.indexOf(t), 'ktype.' + c.types.indexOf(t), S.mon.kType[t] ?? '', { max: daysOf() }))).join('');
+  },
+  open() {
+    if (this.el) return;
+    const c = S.cfg, d = document.createElement('div');
+    d.className = 'gx'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'はじめての案内');
+    const step = (no, en, ja, lead, body, why) => `<section class="gx-sec gx-step"><div class="gx-in">
+      <div class="gx-head rv"><span class="gx-no">${no}</span><span class="gx-en">${en}</span><h2>${ja}</h2></div>
+      <p class="gx-lead rv">${lead}</p><div class="gx-form cl">${body}</div><div class="rv">${this.why(why)}</div></div></section>`;
+    d.innerHTML = `
+<div class="gx-load" id="gx-load"><span id="gx-cnt">0</span><i>%</i></div>
+<header class="gx-bar"><span class="gx-brand">Monthly Shift Maker</span><span class="gx-pct"><b id="gx-pct">0</b> %</span><button class="gx-skip" data-a="xclose">Skip<span>あとで設定する</span></button></header>
+<div class="gx-line"><i id="gx-line"></i></div>
+<div class="gx-scroll" id="gx-scroll">
+ <section class="gx-sec gx-fv"><div class="gx-in">
+  <p class="gx-en rv">月間シフト作成ツール</p>
+  <h1 class="gx-catch" aria-label="毎月のシフトづくり、おつかれさまです。">${this.chars('毎月のシフトづくり、\nおつかれさまです。')}</h1>
+  <p class="gx-sub rv">働くみんなの仕事と暮らしが、<br>ちょうどよく整うように。<br>これからのシフトづくりを、<br>このツールがお手伝いします。</p>
+  <div class="gx-cue" aria-hidden="true"><span>Scroll</span><i></i></div></div></section>
+ <section class="gx-sec gx-msg"><div class="gx-in">
+  ${['みんなの希望を聞いて、人数を数えて、<br>何度も組み直して。', 'その時間はずっと、<br>だれかの休みを守るための時間でした。', 'いつも、ありがとうございます。', '休みたい日に、休めること。<br>働く日が、だれかにかたよらないこと。<br>つくる人も、働く人も、<br>無理をしないこと。', '仕事も、暮らしも、<br>ちょうどよく続いていくように。', 'ここからは、いっしょにつくりましょう。'].map(t => `<p class="rv">${t}</p>`).join('')}</div></section>
+ <section class="gx-sec"><div class="gx-in">
+  <div class="gx-head rv"><span class="gx-en">Capability</span><h2>このツールにできること</h2></div>
+  <div class="gx-cap">${[['Rest first', '休みを先に置く', '希望休・有休を動かさずに、残りの公休を配ります。'], ['Keep the rules', '条件を守って組む', '連勤の上限、公休日数、最低人数を守ります。'], ['Find the gaps', 'ずれを見つける', '人数割れや飛び石休みを、理由つきで知らせます。'], ['Share as one', '一枚で共有する', '手直しのあと、画像にして渡せます。']].map(([en, ja, tx], i) => `<div class="gx-card rv" style="--d:${i}"><span class="gx-en">${en}</span><b>${ja}</b><p>${tx}</p></div>`).join('')}</div></div></section>
+ <section class="gx-sec gx-mid"><div class="gx-in">
+  <div class="gx-head rv"><span class="gx-en">Setup</span><h2>はじめの設定</h2></div>
+  <p class="gx-big rv">4つだけ、<br>いっしょに決めましょう。</p>
+  <p class="gx-sub rv">ここで決めた内容は、あとから各ページでいつでも直せます。</p></div></section>
+ ${step('01', 'Store', '店舗と人数', 'まず、1日に何人いればお店が回るかを教えてください。',
+      `<div class="gx-row">${fld('店舗名（空欄でも可）', txt('x-store', 'cfg.storeName', c.storeName, 'w-l', '店舗名'))}</div>
+       <div class="gx-row">${fld('最低人数', num('x-min', 'cfg.minStaff', c.minStaff, { min: 1 }))}${fld('多めに置く日の人数', num('x-pri', 'cfg.priStaff', c.priStaff, { min: 1 }))}${fld('1日の上限人数', num('x-max', 'cfg.maxStaff', c.maxStaff, { min: 1 }))}</div>`,
+      ['最低人数を下回る日を見つけて、ヘルプを頼むかどうかを選べます。', '土日祝や納品日は、余裕があるときだけ多めに置きます。'])}
+ ${step('02', 'Pattern', '勤務パターン', 'お店で使っている記号と時間を、そのまま入れてください。',
+      `<div class="gx-row">${[['E', '早番'], ['M', '中番'], ['L', '遅番']].map(([k, n]) => `${fld(n + 'の記号', txt('x-sd' + k + 'l', 'sd.' + k + '.label', c.shiftDefs[k].label, 'w-s'))}${fld(n + 'の時間', txt('x-sd' + k + 't', 'sd.' + k + '.time', c.shiftDefs[k].time, 'w-m'))}`).join('')}</div>`,
+      ['記号は表にそのまま出ます。', '毎日、開店と閉店に1人ずついるように番を割り当てます。'])}
+ ${step('03', 'Staff', 'スタッフ', 'いっしょに働くメンバーを入れてください。名前は記号でもかまいません。',
+      `<div id="gx-staff">${this.staffHTML()}</div>`,
+      ['1人ずつ、連勤が上限を超えないように休みを配ります。', '新人のバディや時短などは、あとで「スタッフ」ページで足せます。'])}
+ ${step('04', 'Holidays', '公休日数', `${S.y}年${S.m}月の公休日数を、雇用区分ごとに入れてください。`,
+      `<div class="gx-row" id="gx-kokyu">${this.kokyuHTML()}</div>`,
+      ['全員の公休が、決めた日数ちょうどになるように組みます。', '区分と日数が違う人は、「公休設定」ページで個別に変えられます。'])}
+ <section class="gx-sec gx-end"><div class="gx-in">
+  <p class="gx-en rv">Ready</p>
+  <h2 class="gx-catch gx-catch2" aria-label="準備が、ととのいました。">${this.chars('準備が、ととのいました。')}</h2>
+  <p class="gx-sub rv">次は、希望休や有休を入れてから、シフトをつくります。</p>
+  <div class="gx-row rv"><button class="gx-link gx-main" data-a="xtoroku">事前登録に進む <i>→</i></button><button class="gx-link" data-a="xclose">閉じる</button></div></div></section>
+</div>`;
+    document.body.appendChild(d); document.body.style.overflow = 'hidden';
+    this.el = d; this.sig = this.sigNow();
+    const sc = d.querySelector('#gx-scroll'), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // 読み込みの演出（0→100%）
+    const cnt = d.querySelector('#gx-cnt'), load = d.querySelector('#gx-load');
+    if (reduce) { load.remove(); d.classList.add('ready'); }
+    else {
+      const t0 = performance.now(), dur = 1500;
+      const tick = t => { const p = Math.min(1, (t - t0) / dur), v = Math.round((1 - Math.pow(1 - p, 3)) * 100); cnt.textContent = v; if (p < 1) requestAnimationFrame(tick); else { load.classList.add('out'); d.classList.add('ready'); setTimeout(() => load.remove(), 900); } };
+      requestAnimationFrame(tick);
+    }
+    // スクロールに合わせて現れる
+    if ('IntersectionObserver' in window && !reduce) {
+      d.classList.add('anim');
+      const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('shown'); io.unobserve(e.target); } }), { root: sc, threshold: 0, rootMargin: '0px 0px -12% 0px' });
+      d.querySelectorAll('.rv,.cl,.gx-catch').forEach(n => io.observe(n));
+    }
+    // 進み具合
+    const pct = d.querySelector('#gx-pct'), line = d.querySelector('#gx-line');
+    const upd = () => { const m = sc.scrollHeight - sc.clientHeight, p = m > 0 ? Math.min(100, Math.round(sc.scrollTop / m * 100)) : 0; pct.textContent = p; line.style.transform = 'scaleX(' + p / 100 + ')'; if (p >= 98 && !S.cfg.onboarded) { S.cfg.onboarded = true; save(); } };
+    sc.addEventListener('scroll', upd, { passive: true }); upd();
+  },
+  sigNow() { return S.cfg.emps.map(e => e.id).join(',') + '|' + S.cfg.emps.map(e => e.type).join(','); },
+  sync() { // スタッフの増減や区分の変更があったときだけ、該当の欄を描き直す
+    if (!this.el) return;
+    const s = this.sigNow(); if (s === this.sig) return;
+    const ids = s.split('|')[0] !== this.sig.split('|')[0]; this.sig = s;
+    if (ids) this.el.querySelector('#gx-staff').innerHTML = this.staffHTML();
+    this.el.querySelector('#gx-kokyu').innerHTML = this.kokyuHTML();
+  },
+  close() { if (!this.el) return; this.el.classList.add('bye'); const n = this.el; this.el = null; document.body.style.overflow = ''; setTimeout(() => n.remove(), 500); S.cfg.onboarded = true; save(); }
+};
 function sheet() {
   const p = S.pick; if (!p) return '';
   const I = buildDayInfo(S.y, S.m, S.mon)[p.d];
@@ -1098,11 +1261,13 @@ function render() {
   <select class="in" id="ym-y" data-k="ym.y" data-t="int" aria-label="年">${[-1, 0, 1, 2].map(o => now.getFullYear() + o).concat(S.y).filter((v, i, a) => a.indexOf(v) === i).sort().map(v => `<option value="${v}" ${v === S.y ? 'selected' : ''}>${v}年</option>`).join('')}</select>
   <select class="in" id="ym-m" data-k="ym.m" data-t="int" aria-label="月">${Array.from({ length: 12 }, (x, i) => `<option value="${i + 1}" ${i + 1 === S.m ? 'selected' : ''}>${i + 1}月</option>`).join('')}</select>
   <button class="ib" data-a="nextm" aria-label="次の月">${IC.r}</button></div>
- <span class="muted">${S.saved ? 'このブラウザに自動保存' : '保存できません（閉じると消えます）'}</span></div>
+ <span class="muted">${S.saved ? 'このブラウザに自動保存' : '保存できません（閉じると消えます）'}</span>
+ <button class="btn text" data-a="xopen">はじめての案内</button></div>
  <nav class="tabs" role="tablist">${TABS.map(([k, n]) => `<button class="tab" role="tab" aria-selected="${S.tab === k}" data-a="gototab" data-tab="${k}">${n}</button>`).join('')}</nav><div class="bar-line"></div></header>
 <main>${page}</main>${sheet()}${dialog()}`;
   if (fid) { const el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { } } }
   window.scrollTo(sx, sy);
+  Intro.sync();
 }
 
 /* ---------- 操作 ---------- */
@@ -1163,6 +1328,9 @@ function carryFromPrev() {
 function onClick(el) {
   const a = el.dataset.a, mon = S.mon, c = S.cfg;
   if (a === 'gototab') return setTab(el.dataset.tab);
+  if (a === 'xopen') { S.pick = null; render(); return Intro.open(); }
+  if (a === 'xclose') { Intro.close(); return render(); }
+  if (a === 'xtoroku') { Intro.close(); return setTab('toroku'); }
   if (a === 'prevm') return changeMonth(S.y, S.m - 1);
   if (a === 'nextm') return changeMonth(S.y, S.m + 1);
   if (a === 'addemp') { if (c.emps.length < 8) { c.emps.push(newEmp(c.nextId++, c.emps.length + 1)); mon.result = null; } }
@@ -1262,12 +1430,13 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-a]'); if (el && !el.disabled) onClick(el);
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && Intro.el && !S.dlg) { Intro.close(); render(); return; }
   if (e.key === 'Escape') { if (S.dlg && S.dlg.type !== 'short') { S.dlg = null; render(); } else if (S.pick) { S.pick = null; render(); } }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('td.cell')) { e.preventDefault(); onClick(e.target); }
 });
 document.addEventListener('toggle', e => { const d = e.target; if (d.tagName === 'DETAILS' && d.dataset.id) { const emp = S.cfg.emps.find(x => x.id === d.dataset.id); if (emp) emp._open = d.open; } }, true);
 window.addEventListener('hashchange', () => { const t = location.hash.slice(1); if (TABS.some(x => x[0] === t) && t !== S.tab) setTab(t); });
-(function init() { const t = location.hash.slice(1); if (TABS.some(x => x[0] === t)) S.tab = t; loadMon(); S.saved = store.set('config', S.cfg); render(); })();
+(function init() { const t = location.hash.slice(1); if (TABS.some(x => x[0] === t)) S.tab = t; loadMon(); S.saved = store.set('config', S.cfg); render(); if (!S.cfg.onboarded) Intro.open(); })();
 
 </script>
 </body>
